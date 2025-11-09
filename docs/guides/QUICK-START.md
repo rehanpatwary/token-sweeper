@@ -116,11 +116,11 @@ Published via `php artisan vendor:publish --tag=token-sweeper-config`
 
 | Document | Purpose |
 |----------|---------|
-| `README-NEW-STRUCTURE.md` | Complete structure overview |
-| `VERIFICATION-REPORT.md` | Test results and validation |
-| `MIGRATION-GUIDE.md` | Migrate from old structure |
-| `nodejs-app/README.md` | Node.js documentation |
-| `laravel-package/README.md` | Laravel documentation |
+| [Project README](../../README.md) | Complete project overview |
+| [Verification Report](../reference/VERIFICATION-REPORT.md) | Test results and validation |
+| [Developer Setup](DEVELOPER-SETUP.md) | Complete development environment setup |
+| [API Guide](API-GUIDE.md) | API integration examples |
+| [Architecture](../architecture/ARCHITECTURE.md) | System architecture and design |
 
 ---
 
@@ -212,6 +212,6 @@ eth-sweeper-for-token/
 ---
 
 **Need Help?**
-- Node.js: `nodejs-app/README.md`
-- Laravel: `laravel-package/README.md`
-- Full Guide: `README-NEW-STRUCTURE.md`
+- Full Documentation: [Documentation Index](../README.md)
+- Developer Setup: [Setup Guide](DEVELOPER-SETUP.md)
+- API Integration: [API Guide](API-GUIDE.md)

@@ -1,229 +1,150 @@
 # Token Sweeper Documentation
 
-Comprehensive documentation for the Multi-chain Token Sweeping System.
+Comprehensive documentation for the Multi-Chain Token Sweeper system.
 
-## 📚 Documentation Index
+---
 
-### Quick Start
-- **[Developer Setup Guide](./DEVELOPER-SETUP.md)** - Complete setup instructions for PHP/Laravel and Node.js development environments
-- **[Quick Start (Root)](../QUICK-START.md)** - Get started in 5 minutes
-- **[API Usage Guide](./API-GUIDE.md)** - Code examples and integration patterns
+## Documentation Structure
 
-### Architecture & Design
-- **[Architecture Overview](./ARCHITECTURE.md)** - System architecture, diagrams, and design patterns
-- **[OpenAPI Specification](./openapi.yaml)** - Complete API specification in OpenAPI 3.0 format
-- **[Interactive API Docs](./api/index.html)** - Swagger UI for testing and exploring the API
+The documentation is organized into three main categories:
 
-### Reference
-- **[CLAUDE.md](../CLAUDE.md)** - Project structure and coding conventions for AI assistance
-- **[Migration Guide](../MIGRATION-GUIDE.md)** - Migrating from older versions
-- **[Verification Report](../VERIFICATION-REPORT.md)** - Test coverage and verification status
+### 📘 Guides
+Step-by-step tutorials and user guides for common tasks.
 
-## 🚀 Quick Navigation
+### 🏗️ Architecture
+Technical architecture documentation, design patterns, and system design.
+
+### 📋 Reference
+Reports, specifications, and reference materials.
+
+---
+
+## Getting Started
+
+### New to Token Sweeper?
+
+Start here for a quick introduction and setup:
+
+1. **[Quick Start Guide](guides/QUICK-START.md)** - Get up and running in 5 minutes
+2. **[Developer Setup](guides/DEVELOPER-SETUP.md)** - Complete development environment setup
+3. **[API Usage Guide](guides/API-GUIDE.md)** - Learn how to integrate the API
 
 ### For Developers
 
-**Just Getting Started?**
-1. Start with [Developer Setup Guide](./DEVELOPER-SETUP.md)
-2. Read [Quick Start](../QUICK-START.md) for a working example
-3. Review [API Usage Guide](./API-GUIDE.md) for integration patterns
+**Setting Up Your Environment:**
+- [Developer Setup Guide](guides/DEVELOPER-SETUP.md) - Prerequisites, installation, configuration
+- [Git Workflow](guides/GIT-WORKFLOW.md) - Git Flow branching model and commit conventions
 
-**Need to Integrate the API?**
-1. Check [OpenAPI Specification](./openapi.yaml) for complete API reference
-2. Use [Interactive API Docs](./api/index.html) to test endpoints
-3. Follow examples in [API Usage Guide](./API-GUIDE.md)
+**Building with Token Sweeper:**
+- [API Usage Guide](guides/API-GUIDE.md) - Complete API integration examples
+- [Architecture Overview](architecture/ARCHITECTURE.md) - Understand system design
+- [OpenAPI Specification](openapi.yaml) - Machine-readable API specification
 
-**Understanding the System?**
-1. Read [Architecture Overview](./ARCHITECTURE.md) for system design
-2. Study the diagrams for visual understanding
-3. Review [CLAUDE.md](../CLAUDE.md) for project conventions
+**Testing and Validation:**
+- [Test Report](reference/TEST-REPORT.md) - Test coverage and results
+- [Verification Report](reference/VERIFICATION-REPORT.md) - Validation status
 
-### For API Users
+---
 
-**Browse Documentation:**
-- 📖 [API Usage Guide](./API-GUIDE.md) - Complete guide with code examples
-- 🔧 [Interactive API Docs](./api/index.html) - Try the API in your browser
-- 📄 [OpenAPI Spec](./openapi.yaml) - Machine-readable API specification
+## Documentation Index
 
-**Common Tasks:**
-- [Generate Deposit Address](./API-GUIDE.md#generate-deposit-address)
-- [Check Sweep Status](./API-GUIDE.md#check-sweep-status)
-- [List Supported Chains](./API-GUIDE.md#list-supported-chains)
-- [Get Sweep History](./API-GUIDE.md#get-sweep-history)
+### 📘 Guides
 
-## 📖 Documentation Overview
+| Document | Description |
+|----------|-------------|
+| **[Quick Start](guides/QUICK-START.md)** | Get started in 5 minutes with minimal setup |
+| **[Developer Setup](guides/DEVELOPER-SETUP.md)** | Complete development environment configuration |
+| **[API Usage Guide](guides/API-GUIDE.md)** | Integration examples with PHP, JavaScript, Python, cURL |
+| **[Git Workflow](guides/GIT-WORKFLOW.md)** | Git Flow branching strategy and commit conventions |
 
-### Developer Setup Guide
+### 🏗️ Architecture
 
-**File:** [DEVELOPER-SETUP.md](./DEVELOPER-SETUP.md)
+| Document | Description |
+|----------|-------------|
+| **[Architecture Overview](architecture/ARCHITECTURE.md)** | System architecture, design patterns, and diagrams |
 
-Complete setup instructions for local development environment:
+### 📋 Reference
 
-- Prerequisites and installation
-- PHP/Laravel configuration
-- Node.js configuration
-- Database setup (PostgreSQL, MySQL, Redis)
-- Environment variables
-- Running tests
-- Troubleshooting
+| Document | Description |
+|----------|-------------|
+| **[Test Report](reference/TEST-REPORT.md)** | Test suite coverage and results (248 tests) |
+| **[Verification Report](reference/VERIFICATION-REPORT.md)** | Codebase validation and verification status |
+| **[Complete Package Report](reference/COMPLETE-PACKAGE-REPORT.md)** | Full project overview and implementation details |
+| **[Migration Report](reference/MONOREPO-MIGRATION-REPORT.md)** | Migration history and architectural changes |
 
-**Start here if:** You're setting up the project for the first time or encountering environment issues.
+### 🌐 API Documentation
 
-### API Usage Guide
+| Resource | Description |
+|----------|-------------|
+| **[OpenAPI Specification](openapi.yaml)** | Complete API specification in OpenAPI 3.0 format |
+| **[Interactive API Docs](api/index.html)** | Swagger UI for testing and exploring endpoints |
 
-**File:** [API-GUIDE.md](./API-GUIDE.md)
+---
 
-Comprehensive API integration guide with code examples:
+## Quick Navigation
 
-- Authentication
-- All API endpoints explained
-- PHP, JavaScript, Python, and cURL examples
-- Error handling
-- Best practices
-- Complete integration examples
+### Common Tasks
 
-**Start here if:** You're integrating the Token Sweeper API into your application.
+**Generate a Deposit Address**
+- PHP: [API Guide - Deposit Generation](guides/API-GUIDE.md#generate-deposit-address)
+- CLI: `php artisan sweeper:generate-address {user_id} {chain_id}`
 
-### Architecture Documentation
+**Monitor Token Sweeps**
+- CLI: `php artisan sweeper:monitor`
+- API: [Sweep Status Endpoint](guides/API-GUIDE.md#check-sweep-status)
 
-**File:** [ARCHITECTURE.md](./ARCHITECTURE.md)
+**Check Sweep History**
+- API: [Sweep Logs Endpoint](guides/API-GUIDE.md#get-sweep-history)
 
-Deep dive into system architecture and design:
+**Add a New Blockchain**
+- Guide: [Architecture - Multi-Chain Configuration](architecture/ARCHITECTURE.md#multi-chain-configuration)
+- Reference: [CLAUDE.md - Adding Blockchains](../CLAUDE.md#adding-a-new-blockchain)
 
-- System overview diagram
-- Sweep workflow sequence
-- Component architecture
-- Database schema with ER diagrams
-- Service layer architecture
-- Security architecture
-- Deployment architecture
-- Technology stack
-- Design patterns
-- Scalability considerations
+**Debug Failed Sweeps**
+- Guide: [Developer Setup - Troubleshooting](guides/DEVELOPER-SETUP.md#troubleshooting)
+- Reference: [Test Report - Common Issues](reference/TEST-REPORT.md)
 
-**Start here if:** You want to understand how the system works internally or plan to extend functionality.
+### By Role
 
-### OpenAPI Specification
+**Backend Developers**
+→ [Developer Setup](guides/DEVELOPER-SETUP.md) → [Architecture](architecture/ARCHITECTURE.md) → [API Guide](guides/API-GUIDE.md)
 
-**File:** [openapi.yaml](./openapi.yaml)
+**API Integrators**
+→ [Quick Start](guides/QUICK-START.md) → [API Guide](guides/API-GUIDE.md) → [OpenAPI Spec](openapi.yaml)
 
-Machine-readable API specification in OpenAPI 3.0 format:
+**DevOps Engineers**
+→ [Developer Setup - Deployment](guides/DEVELOPER-SETUP.md#production-deployment) → [Architecture - Deployment](architecture/ARCHITECTURE.md#deployment-architecture)
 
-- All endpoints documented
-- Request/response schemas
-- Authentication requirements
-- Error responses
-- Code examples in multiple languages
+**QA Engineers**
+→ [Test Report](reference/TEST-REPORT.md) → [Verification Report](reference/VERIFICATION-REPORT.md)
 
-**Use this for:**
-- Generating API clients
-- API testing tools (Postman, Insomnia)
-- Documentation generation
-- Contract testing
+---
 
-### Interactive API Documentation
+## Using the Documentation
 
-**File:** [api/index.html](./api/index.html)
+### View Documentation Locally
 
-Swagger UI-based interactive documentation:
-
-- Browse all endpoints
-- Try API calls directly from the browser
-- View request/response examples
-- Test authentication
-- Export API requests
-
-**Access it by:** Opening `docs/api/index.html` in your browser or serving it with a local HTTP server.
-
-## 🎯 Use Cases & Examples
-
-### Use Case 1: Integrate Token Deposits into Your App
-
-**Goal:** Allow users to deposit ERC-20 tokens into your application.
-
-**Steps:**
-1. Read [API Usage Guide - Generate Deposit Address](./API-GUIDE.md#generate-deposit-address)
-2. Implement deposit address generation for your users
-3. Monitor sweep status using the API
-4. Credit user accounts when sweeps complete
-
-**Code Example:** See [Complete Integration Example](./API-GUIDE.md#complete-integration-example-php-laravel)
-
-### Use Case 2: Build a Custom Monitoring Dashboard
-
-**Goal:** Create a dashboard to monitor token sweeps across chains.
-
-**Steps:**
-1. Review [Architecture - System Overview](./ARCHITECTURE.md#system-overview)
-2. Use [Get Pending Sweeps](./API-GUIDE.md#get-pending-sweeps) endpoint
-3. Use [Get Sweep History](./API-GUIDE.md#get-sweep-history) endpoint
-4. Implement WebSocket updates for real-time monitoring
-
-**API Endpoints:**
-- `GET /pending-sweeps` - Active sweeps
-- `GET /sweep-logs` - Historical data
-- `GET /sweep-status` - Address-specific status
-
-### Use Case 3: Add a New Blockchain Network
-
-**Goal:** Extend support to a new EVM-compatible chain.
-
-**Steps:**
-1. Read [Architecture - Multi-Chain Configuration](./ARCHITECTURE.md#multi-chain-configuration)
-2. Add chain configuration to `config/token-sweeper.php`
-3. Update environment variables with RPC URL
-4. Run `php artisan sweeper:seed` to add chain
-5. Update both PHP and Node.js implementations
-
-**References:**
-- [CLAUDE.md - Adding a New Blockchain](../CLAUDE.md#adding-a-new-blockchain)
-- [Developer Setup - Database Configuration](./DEVELOPER-SETUP.md#database-configuration)
-
-### Use Case 4: Debug Failed Sweeps
-
-**Goal:** Investigate and fix failed token sweeps.
-
-**Steps:**
-1. Check [API-GUIDE - Error Handling](./API-GUIDE.md#error-handling)
-2. Query `GET /pending-sweeps?status=failed`
-3. Review error messages in response
-4. Check [Developer Setup - Troubleshooting](./DEVELOPER-SETUP.md#troubleshooting)
-
-**Common Issues:**
-- Insufficient gas in master wallet
-- RPC connection failures
-- Invalid token contract addresses
-- Network congestion
-
-## 🛠 Development Tools
-
-### View API Documentation Locally
-
-**Option 1: Simple HTTP Server**
+**Serve API Documentation:**
 ```bash
+# Using Python
 cd docs/api
 python3 -m http.server 8080
-# Visit: http://localhost:8080
-```
 
-**Option 2: Using npx**
-```bash
+# Using Node.js
 npx http-server docs/api -p 8080
-# Visit: http://localhost:8080
-```
 
-**Option 3: Using PHP**
-```bash
+# Using PHP
 cd docs/api
 php -S localhost:8080
-# Visit: http://localhost:8080
 ```
 
-### Generate API Client
+Then visit: http://localhost:8080
 
-Use the OpenAPI spec to generate client libraries:
+### Generate API Clients
 
-**JavaScript/TypeScript:**
+Use the OpenAPI specification to generate client libraries:
+
+**TypeScript/JavaScript:**
 ```bash
 npx @openapitools/openapi-generator-cli generate \
   -i docs/openapi.yaml \
@@ -247,7 +168,7 @@ openapi-generator-cli generate \
   -o generated/php-client
 ```
 
-### Validate OpenAPI Spec
+### Validate OpenAPI Specification
 
 ```bash
 # Using Redocly CLI
@@ -257,104 +178,133 @@ npx @redocly/cli lint docs/openapi.yaml
 npx swagger-cli validate docs/openapi.yaml
 ```
 
-### Generate Documentation Site
+---
 
-```bash
-# Using Redoc
-npx @redocly/cli build-docs docs/openapi.yaml \
-  -o docs/api/redoc.html
+## Documentation Standards
 
-# Using Swagger UI
-npx swagger-ui-cli bundle docs/openapi.yaml \
-  -o docs/api/swagger.html
+### File Organization
+
+```
+docs/
+├── guides/              # Step-by-step tutorials and user guides
+│   ├── QUICK-START.md
+│   ├── DEVELOPER-SETUP.md
+│   ├── API-GUIDE.md
+│   └── GIT-WORKFLOW.md
+│
+├── architecture/        # Technical architecture and design
+│   └── ARCHITECTURE.md
+│
+├── reference/          # Reference materials and reports
+│   ├── TEST-REPORT.md
+│   ├── VERIFICATION-REPORT.md
+│   ├── COMPLETE-PACKAGE-REPORT.md
+│   └── MONOREPO-MIGRATION-REPORT.md
+│
+├── api/                # Interactive API documentation
+│   └── index.html
+│
+├── openapi.yaml        # API specification
+└── README.md           # This file
 ```
 
-## 📊 Diagrams
+### Writing Guidelines
 
-All architecture diagrams are written in Mermaid format and can be viewed in:
+**When contributing documentation:**
 
+1. **Use clear, concise language** - Technical but accessible
+2. **Include code examples** - Show don't tell
+3. **Add diagrams where helpful** - Use Mermaid for diagrams
+4. **Follow existing formatting** - Maintain consistency
+5. **Test all code examples** - Ensure they work
+6. **Update the index** - Add new docs to this README
+
+### Mermaid Diagrams
+
+All architecture diagrams use Mermaid format and render natively on GitHub. View them in:
 - GitHub (native rendering)
 - VS Code (with Mermaid extension)
 - [Mermaid Live Editor](https://mermaid.live)
-- Most modern markdown viewers
 
-**Key Diagrams:**
-- [System Overview](./ARCHITECTURE.md#system-overview)
-- [Sweep Workflow Sequence](./ARCHITECTURE.md#sweep-workflow)
-- [Component Architecture](./ARCHITECTURE.md#component-architecture)
-- [Database Schema](./ARCHITECTURE.md#database-schema)
-- [Service Layer](./ARCHITECTURE.md#service-layer-architecture)
-- [Security Architecture](./ARCHITECTURE.md#security-architecture)
+---
 
-## 🔍 Search Documentation
+## Frequently Asked Questions
 
-### Find by Topic
+### How do I get started quickly?
+See the [Quick Start Guide](guides/QUICK-START.md) for a 5-minute setup.
 
-**Authentication:**
-- [API Guide - Authentication](./API-GUIDE.md#authentication)
-- [OpenAPI - Security Schemes](./openapi.yaml)
+### How do I integrate the API into my application?
+Follow the [API Usage Guide](guides/API-GUIDE.md) with examples in multiple languages.
 
-**Configuration:**
-- [Developer Setup - Environment Variables](./DEVELOPER-SETUP.md#environment-variables)
-- [CLAUDE.md - Configuration](../CLAUDE.md#configuration--environment)
+### Where can I find the database schema?
+See [Architecture - Database Schema](architecture/ARCHITECTURE.md#database-schema) for ERD diagrams.
 
-**Testing:**
-- [Developer Setup - Running Tests](./DEVELOPER-SETUP.md#running-tests)
-- [CLAUDE.md - Testing Strategy](../CLAUDE.md#testing-strategy)
+### How do I add support for a new blockchain?
+See [CLAUDE.md - Adding a New Blockchain](../CLAUDE.md#adding-a-new-blockchain).
 
-**Deployment:**
-- [Architecture - Deployment](./ARCHITECTURE.md#deployment-architecture)
-- [Developer Setup - Production Deployment](./DEVELOPER-SETUP.md#production-deployment)
+### What's the test coverage?
+See [Test Report](reference/TEST-REPORT.md) - 217/248 tests passing (87.5%).
 
-**Troubleshooting:**
-- [Developer Setup - Troubleshooting](./DEVELOPER-SETUP.md#troubleshooting)
-- [API Guide - Error Handling](./API-GUIDE.md#error-handling)
+### How do I debug failed sweeps?
+See [Developer Setup - Troubleshooting](guides/DEVELOPER-SETUP.md#troubleshooting).
 
-## 🤝 Contributing
+---
 
-### Documentation Contributions
+## Contributing to Documentation
 
-We welcome documentation improvements! To contribute:
+We welcome documentation improvements!
+
+### How to Contribute
 
 1. Fork the repository
-2. Create a feature branch
+2. Create a feature branch: `git checkout -b docs/improve-api-guide`
 3. Make your changes
 4. Test documentation locally
-5. Submit a pull request
+5. Commit: `git commit -m 'docs: Improve API guide examples'`
+6. Push: `git push origin docs/improve-api-guide`
+7. Open a Pull Request
 
-**Documentation Standards:**
-- Use clear, concise language
-- Include code examples
-- Add diagrams where helpful
-- Follow existing formatting
-- Update table of contents
-
-### Reporting Documentation Issues
+### Reporting Issues
 
 Found an error or unclear section?
 
-1. Open an issue at https://github.com/multicoin/token-sweeper/issues
+1. Open an issue on [GitHub Issues](https://github.com/multicoin/token-sweeper/issues)
 2. Tag it with `documentation` label
 3. Describe the issue and suggest improvements
 
-## 📝 License
+---
 
-This documentation is part of the Token Sweeper project and is licensed under the MIT License.
+## Related Documentation
+
+### Project Documentation
+- **[Project README](../README.md)** - Main project overview
+- **[CLAUDE.md](../CLAUDE.md)** - AI assistant instructions and project conventions
+
+### Implementation Documentation
+- **PHP Source**: `php/src/` - PHPDoc comments in source files
+- **Node.js Source**: `nodejs/src/` - JSDoc comments in source files
+
+---
+
+## Version Information
+
+**Documentation Version:** 1.0.0
+**Last Updated:** January 2025
+**Maintained by:** Multicoin Team
 
 ---
 
 ## Quick Links
 
-- 🏠 [Project README](../readme.md)
-- 🚀 [Quick Start](../QUICK-START.md)
-- 🔧 [Developer Setup](./DEVELOPER-SETUP.md)
-- 📖 [API Guide](./API-GUIDE.md)
-- 🏗 [Architecture](./ARCHITECTURE.md)
-- 🌐 [Interactive API Docs](./api/index.html)
-- 📄 [OpenAPI Spec](./openapi.yaml)
+- 🏠 [Project Home](../README.md)
+- 🚀 [Quick Start](guides/QUICK-START.md)
+- 🔧 [Developer Setup](guides/DEVELOPER-SETUP.md)
+- 📖 [API Guide](guides/API-GUIDE.md)
+- 🏗️ [Architecture](architecture/ARCHITECTURE.md)
+- 🌐 [Interactive API Docs](api/index.html)
+- 📄 [OpenAPI Spec](openapi.yaml)
+- 🤖 [CLAUDE.md](../CLAUDE.md)
 
 ---
 
-**Last Updated:** January 2025
-**Version:** 1.0.0
-**Maintained by:** Multicoin Team
+**Need Help?** Check the guides above or open an issue on GitHub.

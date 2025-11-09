@@ -123,6 +123,7 @@ $RECYCLE.BIN/
 /*.log
 /junit.xml
 phpunit.xml.bak
+.phpunit.cache
 .phpunit.cache/
 
 # ==============================================
