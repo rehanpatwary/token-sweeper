@@ -1,0 +1,641 @@
+openapi: 3.0.3
+info:
+  title: Token Sweeper API
+  version: 1.0.0
+  description: |
+    Multi-chain token sweeping system API for Ethereum, BSC, Polygon, Arbitrum, and Optimism.
+
+    The Token Sweeper API provides endpoints to manage deposit addresses, monitor token sweeps,
+    and track sweep operations across multiple blockchain networks.
+
+    ## Key Features
+
+    - **Multi-chain Support**: Ethereum, BSC, Polygon, Arbitrum, Optimism
+    - **Automatic Sweeping**: Monitors deposits and automatically sweeps tokens to hot wallets
+    - **HD Wallet Generation**: BIP-44 compliant deposit address generation
+    - **Real-time Monitoring**: Track pending sweeps and sweep history
+
+    ## Authentication
+
+    Currently, the API uses Laravel's built-in authentication middleware.
+    Include authentication tokens in the `Authorization` header:
+
+    ```
+    Authorization: Bearer YOUR_API_TOKEN
+    ```
+
+  contact:
+    name: Multicoin Team
+    email: dev@multicoin.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.example.com/api/sweeper
+    description: Production server
+  - url: http://localhost:8000/api/sweeper
+    description: Development server (Laravel)
+  - url: http://localhost:3000/api
+    description: Development server (Node.js)
+
+tags:
+  - name: Health
+    description: Health check endpoints
+  - name: Chains
+    description: Blockchain network configuration
+  - name: Tokens
+    description: ERC-20 token management
+  - name: Deposit Addresses
+    description: User deposit address generation and management
+  - name: Sweeps
+    description: Token sweep operations and monitoring
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      description: Returns the health status of the API service
+      operationId: healthCheck
+      tags:
+        - Health
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: ok
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: '2025-01-09T10:30:00Z'
+
+  /chains:
+    get:
+      summary: List all supported chains
+      description: Returns a list of all supported blockchain networks
+      operationId: listChains
+      tags:
+        - Chains
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Chain'
+
+  /tokens:
+    get:
+      summary: List all tokens
+      description: Returns a list of supported ERC-20 tokens, optionally filtered by chain
+      operationId: listTokens
+      tags:
+        - Tokens
+      parameters:
+        - name: chain_id
+          in: query
+          description: Filter tokens by chain ID (1=Ethereum, 56=BSC, 137=Polygon, etc.)
+          required: false
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Token'
+
+  /deposit-address:
+    post:
+      summary: Create deposit address
+      description: |
+        Generates a new deposit address for a user on a specific blockchain.
+        Uses BIP-44 HD wallet derivation (m/44'/60'/0'/0/{index}).
+      operationId: createDepositAddress
+      tags:
+        - Deposit Addresses
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - user_id
+                - chain_id
+              properties:
+                user_id:
+                  type: integer
+                  description: Unique user identifier
+                  example: 12345
+                chain_id:
+                  type: integer
+                  description: Blockchain network ID (1=Ethereum, 56=BSC, 137=Polygon)
+                  example: 1
+      responses:
+        '201':
+          description: Deposit address created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      user_id:
+                        type: integer
+                        example: 12345
+                      chain_id:
+                        type: integer
+                        example: 1
+                      address:
+                        type: string
+                        example: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+
+  /user-addresses:
+    get:
+      summary: Get user deposit addresses
+      description: Returns all deposit addresses for a specific user across all chains
+      operationId: getUserAddresses
+      tags:
+        - Deposit Addresses
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          description: User identifier
+          schema:
+            type: integer
+            example: 12345
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/DepositAddress'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /sweep-status:
+    get:
+      summary: Get sweep status for address
+      description: Returns the sweep status and history for a specific deposit address
+      operationId: getSweepStatus
+      tags:
+        - Sweeps
+      parameters:
+        - name: address
+          in: query
+          required: true
+          description: Deposit address to check
+          schema:
+            type: string
+            example: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb'
+        - name: chain_id
+          in: query
+          required: true
+          description: Chain ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PendingSweep'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /pending-sweeps:
+    get:
+      summary: List pending sweeps
+      description: Returns a list of pending sweeps, optionally filtered by status and chain
+      operationId: getPendingSweeps
+      tags:
+        - Sweeps
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: Filter by sweep status
+          schema:
+            type: string
+            enum: [pending, funding, sweeping, completed, failed]
+            default: pending
+        - name: chain_id
+          in: query
+          required: false
+          description: Filter by chain ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/PendingSweep'
+
+  /sweep-logs:
+    get:
+      summary: Get sweep history logs
+      description: Returns historical sweep logs with optional filtering
+      operationId: getSweepLogs
+      tags:
+        - Sweeps
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          description: Maximum number of logs to return (max 100)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: chain_id
+          in: query
+          required: false
+          description: Filter by chain ID
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/SweepLog'
+
+  /process-sweep:
+    post:
+      summary: Manually trigger a sweep
+      description: |
+        Manually initiates a token sweep from a deposit address to the hot wallet.
+        Normally, sweeps are triggered automatically by the monitoring service.
+      operationId: processSweep
+      tags:
+        - Sweeps
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - deposit_address
+                - token_address
+                - chain_id
+              properties:
+                deposit_address:
+                  type: string
+                  description: Source deposit address
+                  example: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb'
+                token_address:
+                  type: string
+                  description: ERC-20 token contract address
+                  example: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+                chain_id:
+                  type: integer
+                  description: Chain ID
+                  example: 1
+      responses:
+        '200':
+          description: Sweep initiated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  message:
+                    type: string
+                    example: Sweep initiated successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '422':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          description: Sweep failed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  message:
+                    type: string
+                    example: Sweep failed
+
+components:
+  schemas:
+    Chain:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Internal database ID
+          example: 1
+        chain_id:
+          type: integer
+          description: Blockchain network ID
+          example: 1
+        name:
+          type: string
+          description: Chain name
+          example: Ethereum Mainnet
+        native_symbol:
+          type: string
+          description: Native token symbol
+          example: ETH
+        is_active:
+          type: boolean
+          description: Whether the chain is currently active
+          example: true
+
+    Token:
+      type: object
+      properties:
+        id:
+          type: integer
+          description: Internal database ID
+          example: 1
+        chain_id:
+          type: integer
+          description: Blockchain network ID
+          example: 1
+        contract_address:
+          type: string
+          description: Token contract address
+          example: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+        symbol:
+          type: string
+          description: Token symbol
+          example: USDT
+        name:
+          type: string
+          description: Token name
+          example: Tether USD
+        decimals:
+          type: integer
+          description: Token decimals
+          example: 6
+        is_active:
+          type: boolean
+          description: Whether the token is actively monitored
+          example: true
+        chain:
+          $ref: '#/components/schemas/Chain'
+
+    DepositAddress:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        user_id:
+          type: integer
+          example: 12345
+        chain_id:
+          type: integer
+          example: 1
+        address:
+          type: string
+          example: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb'
+        derivation_index:
+          type: integer
+          description: HD wallet derivation index
+          example: 42
+        created_at:
+          type: string
+          format: date-time
+          example: '2025-01-09T10:30:00Z'
+
+    PendingSweep:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        deposit_address:
+          type: string
+          example: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb'
+        token_address:
+          type: string
+          example: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+        chain_id:
+          type: integer
+          example: 1
+        amount:
+          type: string
+          description: Token amount in wei/smallest unit
+          example: '1000000'
+        status:
+          type: string
+          enum: [pending, funding, sweeping, completed, failed]
+          example: pending
+        funding_tx_hash:
+          type: string
+          nullable: true
+          example: '0x1234567890abcdef...'
+        sweep_tx_hash:
+          type: string
+          nullable: true
+          example: '0xabcdef1234567890...'
+        retry_count:
+          type: integer
+          example: 0
+        error_message:
+          type: string
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: '2025-01-09T10:30:00Z'
+        updated_at:
+          type: string
+          format: date-time
+          example: '2025-01-09T10:35:00Z'
+        chain:
+          $ref: '#/components/schemas/Chain'
+
+    SweepLog:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        deposit_address:
+          type: string
+          example: '0x742d35Cc6634C0532925a3b844Bc9e7595f0bEb'
+        token_address:
+          type: string
+          example: '0xdAC17F958D2ee523a2206206994597C13D831ec7'
+        chain_id:
+          type: integer
+          example: 1
+        amount:
+          type: string
+          example: '1000000'
+        status:
+          type: string
+          enum: [completed, failed]
+          example: completed
+        funding_tx_hash:
+          type: string
+          example: '0x1234567890abcdef...'
+        sweep_tx_hash:
+          type: string
+          example: '0xabcdef1234567890...'
+        gas_used:
+          type: string
+          nullable: true
+          example: '0.002'
+        error_message:
+          type: string
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: '2025-01-09T10:30:00Z'
+        chain:
+          $ref: '#/components/schemas/Chain'
+
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: string
+          example: Error message
+        message:
+          type: string
+          example: Detailed error description
+
+    ValidationError:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+          example: The given data was invalid.
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            user_id: ['The user id field is required.']
+            chain_id: ['The selected chain id is invalid.']
+
+  responses:
+    BadRequest:
+      description: Bad request
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+    ValidationError:
+      description: Validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ValidationError'
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT authentication token
+
+security:
+  - bearerAuth: []

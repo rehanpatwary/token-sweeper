@@ -1,0 +1,212 @@
+# ==============================================
+# PHP / Laravel
+# ==============================================
+/vendor/
+/node_modules/
+/public/hot
+/public/storage
+/storage/*.key
+/storage/app/
+/storage/framework/
+/storage/logs/
+.env
+.env.backup
+.env.production
+.phpunit.result.cache
+Homestead.json
+Homestead.yaml
+auth.json
+npm-debug.log
+yarn-error.log
+
+# ==============================================
+# Node.js
+# ==============================================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.npm
+.eslintcache
+.node_repl_history
+*.tgz
+.yarn-integrity
+
+# ==============================================
+# Environment & Secrets
+# ==============================================
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.env.*.local
+*.env
+credentials.json
+secrets/
+.secrets
+
+# ==============================================
+# IDE & Editors
+# ==============================================
+# VS Code
+.vscode/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
+
+# PhpStorm / IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+.idea_modules/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+
+# ==============================================
+# Operating System
+# ==============================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+
+# Linux
+.directory
+.Trash-*
+.nfs*
+
+# ==============================================
+# Testing & Coverage
+# ==============================================
+/coverage/
+/.nyc_output
+/test-results/
+/*.log
+/junit.xml
+phpunit.xml.bak
+.phpunit.cache/
+
+# ==============================================
+# Build & Distribution
+# ==============================================
+/build/
+/dist/
+/out/
+*.tgz
+*.tar.gz
+
+# Composer
+composer.phar
+/vendor/
+composer.lock.bak
+
+# NPM
+package-lock.json.bak
+yarn.lock.bak
+
+# ==============================================
+# Temporary & Cache Files
+# ==============================================
+*.tmp
+*.temp
+*.cache
+*.log
+*.pid
+*.seed
+*.pid.lock
+.cache/
+tmp/
+temp/
+
+# ==============================================
+# Documentation Build
+# ==============================================
+/docs/build/
+/docs/_build/
+/.docusaurus
+
+# ==============================================
+# Docker
+# ==============================================
+docker-compose.override.yml
+.docker/
+
+# ==============================================
+# Database
+# ==============================================
+*.sqlite
+*.sqlite3
+*.db
+*.sql.gz
+/database/*.sqlite
+/database/*.sqlite-journal
+
+# ==============================================
+# Backup & Old Files
+# ==============================================
+*.bak
+*.backup
+*.old
+*.orig
+*~
+
+# ==============================================
+# Project Specific
+# ==============================================
+# Generated documentation
+/generated/
+
+# Private keys (should NEVER be committed)
+*.pem
+*.key
+*.p12
+*.pfx
+privatekey.*
+private_key.*
+
+# Wallet files
+wallet.json
+keystore/
+
+# Local development overrides
+local.config.php
+local.config.js

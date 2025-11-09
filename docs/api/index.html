@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Sweeper API Documentation</title>
+    <link rel="stylesheet" type="text/css" href="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+        }
+
+        #swagger-ui {
+            max-width: 1460px;
+            margin: 0 auto;
+        }
+
+        .topbar {
+            display: none;
+        }
+
+        .swagger-ui .info {
+            margin: 50px 0;
+        }
+
+        .swagger-ui .info .title {
+            font-size: 36px;
+            margin-bottom: 10px;
+        }
+
+        .custom-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .custom-header h1 {
+            margin: 0 0 10px 0;
+            font-size: 42px;
+            font-weight: 300;
+        }
+
+        .custom-header p {
+            margin: 0;
+            font-size: 18px;
+            opacity: 0.9;
+        }
+
+        .custom-nav {
+            background: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #e1e4e8;
+        }
+
+        .custom-nav a {
+            color: #667eea;
+            text-decoration: none;
+            margin: 0 15px;
+            font-weight: 500;
+            font-size: 16px;
+        }
+
+        .custom-nav a:hover {
+            color: #764ba2;
+        }
+
+        .footer {
+            background: #f8f9fa;
+            padding: 30px;
+            text-align: center;
+            margin-top: 50px;
+            border-top: 1px solid #e1e4e8;
+        }
+
+        .footer p {
+            margin: 5px 0;
+            color: #6c757d;
+        }
+
+        .footer a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="custom-header">
+        <h1>🔄 Token Sweeper API</h1>
+        <p>Multi-chain token sweeping system for Ethereum, BSC, Polygon, Arbitrum, and Optimism</p>
+    </div>
+
+    <div class="custom-nav">
+        <a href="#overview">Overview</a>
+        <a href="#getting-started">Getting Started</a>
+        <a href="../API-GUIDE.md" target="_blank">Usage Guide</a>
+        <a href="../ARCHITECTURE.md" target="_blank">Architecture</a>
+        <a href="https://github.com/multicoin/token-sweeper" target="_blank">GitHub</a>
+    </div>
+
+    <div id="swagger-ui"></div>
+
+    <div class="footer">
+        <p><strong>Token Sweeper API v1.0.0</strong></p>
+        <p>
+            <a href="https://github.com/multicoin/token-sweeper">GitHub Repository</a> |
+            <a href="https://github.com/multicoin/token-sweeper/issues">Report Issues</a> |
+            <a href="../DEVELOPER-SETUP.md">Developer Setup</a>
+        </p>
+        <p style="margin-top: 15px;">
+            &copy; 2025 Multicoin Team. Licensed under MIT.
+        </p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/swagger-ui-dist@5/swagger-ui-standalone-preset.js"></script>
+    <script>
+        window.onload = function() {
+            window.ui = SwaggerUIBundle({
+                url: "../openapi.yaml",
+                dom_id: '#swagger-ui',
+                deepLinking: true,
+                presets: [
+                    SwaggerUIBundle.presets.apis,
+                    SwaggerUIStandalonePreset
+                ],
+                plugins: [
+                    SwaggerUIBundle.plugins.DownloadUrl
+                ],
+                layout: "StandaloneLayout",
+                defaultModelsExpandDepth: 1,
+                defaultModelExpandDepth: 3,
+                docExpansion: "list",
+                filter: true,
+                showRequestHeaders: true,
+                tryItOutEnabled: true,
+                requestSnippetsEnabled: true,
+                requestSnippets: {
+                    generators: {
+                        curl_bash: {
+                            title: "cURL (bash)",
+                            syntax: "bash"
+                        },
+                        curl_powershell: {
+                            title: "cURL (PowerShell)",
+                            syntax: "powershell"
+                        },
+                        curl_cmd: {
+                            title: "cURL (CMD)",
+                            syntax: "bash"
+                        }
+                    },
+                    defaultExpanded: true,
+                    languages: null
+                },
+                persistAuthorization: true
+            });
+        };
+    </script>
+</body>
+</html>
