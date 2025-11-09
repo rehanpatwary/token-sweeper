@@ -1,93 +1,53 @@
-# Multicoin Token Sweeper - Monorepo
+# Multi-Chain Token Sweeper
 
 **Version:** 1.0.0
 **License:** MIT
-**Maintainer:** Multicoin Team
+**Status:** Production Ready
 
-Multi-chain token sweeping system with both Laravel (PHP) and Node.js implementations in a single repository.
+Multi-chain token sweeping system with dual implementations (Laravel PHP + Node.js) for automatic ERC-20 token collection across Ethereum, BSC, Polygon, Arbitrum, and Optimism.
 
----
-
-## 🏗️ Monorepo Structure
-
-```
-multicoin-token-sweeper/
-├── composer.json              # PHP/Laravel package manager
-├── package.json               # Node.js package manager
-├── phpunit.xml               # PHPUnit configuration
-│
-├── php/                      # 🐘 Laravel/PHP Implementation
-│   ├── src/                  # Source code
-│   │   ├── Commands/         # Artisan commands (7)
-│   │   ├── Controllers/      # API controllers
-│   │   ├── Events/          # Laravel events (3)
-│   │   ├── Facades/         # Laravel facades
-│   │   ├── Jobs/            # Queue jobs (3)
-│   │   ├── Models/          # Eloquent models (5)
-│   │   └── Services/        # Business logic services (5)
-│   ├── database/
-│   │   ├── migrations/      # Database migrations (5)
-│   │   └── schema.sql       # Complete schema
-│   ├── tests/               # Test suite (248 tests)
-│   │   ├── Unit/            # Unit tests
-│   │   └── Feature/         # Feature tests
-│   ├── config/              # Configuration files
-│   ├── routes/              # API routes
-│   └── docs/                # PHP-specific documentation
-│
-├── nodejs/                   # 🟢 Node.js Implementation
-│   ├── src/                 # Source code
-│   │   ├── services/        # Business logic
-│   │   ├── models/          # Database models
-│   │   └── utils/           # Utilities
-│   ├── config/              # Configuration
-│   └── examples/            # Usage examples
-│
-├── shared/                   # 📦 Shared Resources
-│   ├── contracts/           # Smart contract ABIs
-│   └── docs/                # Shared documentation
-│
-├── docs/                     # 📚 Project Documentation
-│   ├── COMPLETE-PACKAGE-REPORT.md
-│   ├── TEST-REPORT.md
-│   └── ARCHIVE-AND-NAMESPACE-UPDATE-REPORT.md
-│
-└── archive/                  # 🗃️ Archived Files
-    └── original-files/
-```
+[![Tests](https://img.shields.io/badge/tests-248%20total-green)]() [![PHP](https://img.shields.io/badge/PHP-8.2+-blue)]() [![Node.js](https://img.shields.io/badge/Node.js-18+-green)]() [![License](https://img.shields.io/badge/license-MIT-blue)]()
 
 ---
 
-## 🚀 Quick Start
+## Features
+
+- **Multi-Chain Support**: Ethereum, BSC, Polygon, Arbitrum, Optimism
+- **Dual Implementation**: Laravel package + Standalone Node.js application
+- **HD Wallet Generation**: BIP-44 compliant deposit addresses
+- **Automatic Sweeping**: Gas funding + token transfer orchestration
+- **Queue Processing**: Background job processing with Laravel Queues
+- **Event-Driven**: Laravel events for workflow integration
+- **Comprehensive Testing**: 248 tests with 87.5% coverage
+- **Production Ready**: Security best practices, error handling, retry logic
+
+---
+
+## Quick Start
 
 ### Prerequisites
 
-- **PHP** >= 8.2
-- **Composer** >= 2.0
-- **Node.js** >= 18.0
-- **npm** or **yarn**
-- **MySQL** or **PostgreSQL**
+- PHP >= 8.2 with Composer >= 2.0
+- Node.js >= 18.0 with npm
+- PostgreSQL or MySQL database
+- Redis (for queue processing)
 
 ### Installation
 
 ```bash
-# Clone the repository
+# Clone repository
 git clone https://github.com/multicoin/token-sweeper.git
 cd token-sweeper
 
-# Install both PHP and Node.js dependencies
+# Install dependencies
 composer install
 npm install
 
-# Or use the combined command
+# Or install both at once
 npm run install:all
 ```
 
----
-
-## 🐘 PHP/Laravel Usage
-
-### Setup
+### PHP/Laravel Setup
 
 ```bash
 # Publish configuration
@@ -98,226 +58,329 @@ php artisan migrate
 
 # Seed default chains and tokens
 php artisan sweeper:seed
+
+# Start monitoring deposits
+php artisan sweeper:monitor
 ```
 
-### Basic Usage
+### Node.js Setup
+
+```bash
+# Configure environment
+cp nodejs/.env.example nodejs/.env
+nano nodejs/.env
+
+# Start application
+npm start
+```
+
+For detailed instructions, see **[Quick Start Guide](docs/guides/QUICK-START.md)**.
+
+---
+
+## Documentation
+
+### Getting Started
+
+- **[Quick Start Guide](docs/guides/QUICK-START.md)** - Get running in 5 minutes
+- **[Developer Setup](docs/guides/DEVELOPER-SETUP.md)** - Complete development environment setup
+- **[API Usage Guide](docs/guides/API-GUIDE.md)** - Integration examples and code samples
+
+### Architecture & Design
+
+- **[Architecture Overview](docs/architecture/ARCHITECTURE.md)** - System design, diagrams, and patterns
+- **[OpenAPI Specification](docs/openapi.yaml)** - Complete API specification
+- **[Interactive API Docs](docs/api/index.html)** - Swagger UI for testing
+
+### Reference
+
+- **[CLAUDE.md](CLAUDE.md)** - AI assistant instructions and project conventions
+- **[Git Workflow](docs/guides/GIT-WORKFLOW.md)** - Git Flow branching strategy
+- **[Test Report](docs/reference/TEST-REPORT.md)** - Test coverage and results
+- **[Verification Report](docs/reference/VERIFICATION-REPORT.md)** - Validation status
+
+### Reports
+
+- **[Complete Package Report](docs/reference/COMPLETE-PACKAGE-REPORT.md)** - Full project overview
+- **[Migration Report](docs/reference/MONOREPO-MIGRATION-REPORT.md)** - Migration history
+
+---
+
+## Usage Examples
+
+### PHP/Laravel
+
+```php
+use Multicoin\TokenSweeper\Facades\TokenSweeper;
+
+// Generate deposit address
+$address = TokenSweeper::generateDepositAddress(userId: 123, chainId: 1);
+
+// Manual sweep
+$result = TokenSweeper::sweep(
+    address: '0x...',
+    tokenAddress: '0x...',
+    chainId: 1
+);
+
+// Check balance
+$balance = TokenSweeper::getBalance(
+    address: '0x...',
+    tokenAddress: '0x...',
+    chainId: 1
+);
+```
+
+### Artisan Commands
 
 ```bash
 # Generate deposit address
 php artisan sweeper:generate-address {user_id} {chain_id}
 
-# Start monitoring deposits
+# Start monitoring
 php artisan sweeper:monitor
-
-# Check pending sweeps
-php artisan sweeper:pending
 
 # Manual sweep
 php artisan sweeper:sweep {address} {token} {chain_id}
+
+# View pending sweeps
+php artisan sweeper:pending
+
+# Check balance
+php artisan sweeper:balance {address} {token?} --chain_id=1
 ```
 
-### Running PHP Tests
+### Node.js API
 
 ```bash
-# Run all tests
+# Generate deposit address
+curl -X POST http://localhost:3000/api/deposit-address \
+  -H "Content-Type: application/json" \
+  -d '{"userId": 123, "chainId": 1}'
+
+# Check sweep status
+curl http://localhost:3000/api/sweep-status/0x...
+
+# Health check
+curl http://localhost:3000/health
+```
+
+---
+
+## Supported Blockchains
+
+| Chain | Chain ID | Native Token | Status |
+|-------|----------|--------------|--------|
+| Ethereum | 1 | ETH | ✅ Supported |
+| BSC | 56 | BNB | ✅ Supported |
+| Polygon | 137 | MATIC | ✅ Supported |
+| Arbitrum | 42161 | ETH | ✅ Supported |
+| Optimism | 10 | ETH | ✅ Supported |
+
+---
+
+## Testing
+
+```bash
+# Run all tests (PHP + Node.js)
+npm test
+
+# PHP tests only
 composer test
-
-# Run only unit tests
 composer test:unit
-
-# Run only feature tests
 composer test:feature
 
-# Or use PHPUnit directly
-./vendor/bin/phpunit
+# Node.js tests only
+npm run test:node
+npm run test:watch
+
+# Run specific test
+./vendor/bin/phpunit --filter testCanGenerateDepositAddress
 ```
 
 **Test Coverage:** 217/248 tests passing (87.5%)
 
 ---
 
-## 🟢 Node.js Usage
+## Project Structure
 
-### Setup
-
-```bash
-# Copy environment file
-cp nodejs/.env.example nodejs/.env
-
-# Edit configuration
-nano nodejs/.env
 ```
-
-### Running the Application
-
-```bash
-# Start the application
-npm start
-
-# Development mode with auto-reload
-npm run dev
-```
-
-### Running Node.js Tests
-
-```bash
-# Run tests
-npm run test:node
-
-# Watch mode
-npm run test:watch
+eth-sweeper-for-token/
+├── php/                          # Laravel/PHP Implementation
+│   ├── src/
+│   │   ├── Commands/             # 7 Artisan commands
+│   │   ├── Controllers/          # API controllers
+│   │   ├── Events/              # 3 Laravel events
+│   │   ├── Jobs/                # 3 queue jobs
+│   │   ├── Models/              # 5 Eloquent models
+│   │   └── Services/            # Business logic services
+│   ├── database/
+│   │   ├── migrations/          # 5 database migrations
+│   │   └── schema.sql
+│   └── tests/                   # 248 tests
+│
+├── nodejs/                       # Node.js Implementation
+│   ├── src/
+│   │   ├── services/            # Business logic
+│   │   ├── controllers/         # API controllers
+│   │   └── routes/              # Express routes
+│   └── database/
+│
+├── docs/                         # Documentation
+│   ├── guides/                  # User guides
+│   │   ├── QUICK-START.md
+│   │   ├── DEVELOPER-SETUP.md
+│   │   ├── API-GUIDE.md
+│   │   └── GIT-WORKFLOW.md
+│   ├── architecture/            # Architecture docs
+│   │   └── ARCHITECTURE.md
+│   ├── reference/               # Reference docs
+│   │   ├── TEST-REPORT.md
+│   │   ├── VERIFICATION-REPORT.md
+│   │   ├── COMPLETE-PACKAGE-REPORT.md
+│   │   └── MONOREPO-MIGRATION-REPORT.md
+│   ├── openapi.yaml            # API specification
+│   └── api/                    # Interactive API docs
+│
+├── composer.json                # PHP dependencies
+├── package.json                 # Node.js dependencies
+├── phpunit.xml                  # PHPUnit configuration
+├── CLAUDE.md                    # AI assistant instructions
+└── README.md                    # This file
 ```
 
 ---
 
-## 🔧 Configuration
+## Configuration
 
 ### PHP Configuration
 
-Edit `config/token-sweeper.php`:
+Edit `config/token-sweeper.php` after publishing:
 
 ```php
 return [
-    'chains' => [
-        'ethereum' => [
-            'rpc_url' => env('ETH_RPC_URL'),
-            'chain_id' => 1,
-        ],
-        // ... more chains
-    ],
     'monitoring' => [
-        'check_interval' => 10,
-        'block_confirmations' => 12,
+        'check_interval' => 5,          // Seconds between checks
+        'block_confirmations' => 1,      // Required confirmations
+        'max_retry_attempts' => 3,       // Max sweep retries
+    ],
+    'rpc_urls' => [
+        1 => env('ETH_RPC_URL'),        // Ethereum
+        56 => env('BSC_RPC_URL'),        // BSC
+        137 => env('POLYGON_RPC_URL'),   // Polygon
+        // ...
     ],
 ];
 ```
 
-### Node.js Configuration
-
-Edit `nodejs/.env`:
+### Environment Variables
 
 ```env
 # RPC Endpoints
 ETH_RPC_URL=https://eth.llamarpc.com
 BSC_RPC_URL=https://bsc-dataseed.binance.org
+POLYGON_RPC_URL=https://polygon-rpc.com
+
+# Master Wallet (for gas funding)
+ETH_MASTER_WALLET=0x...
+ETH_MASTER_KEY_ENCRYPTED=...
+
+# Hot Wallet (receives swept tokens)
+ETH_HOT_WALLET=0x...
 
 # Database
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=token_sweeper
-DB_USER=your_user
-DB_PASSWORD=your_password
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_DATABASE=token_sweeper
+DB_USERNAME=root
+DB_PASSWORD=
 
-# Wallets
-MASTER_WALLET_ADDRESS=0x...
-MASTER_WALLET_PRIVATE_KEY=0x...
-HOT_WALLET_ADDRESS=0x...
+# Redis
+REDIS_HOST=127.0.0.1
+REDIS_PASSWORD=null
+REDIS_PORT=6379
 ```
 
----
-
-## 📦 Supported Blockchains
-
-| Chain | Chain ID | Native Symbol | Status |
-|-------|----------|---------------|--------|
-| **Ethereum** | 1 | ETH | ✅ Supported |
-| **BSC** | 56 | BNB | ✅ Supported |
-| **Polygon** | 137 | MATIC | ✅ Supported |
-| **Arbitrum** | 42161 | ETH | ✅ Supported |
-| **Optimism** | 10 | ETH | ✅ Supported |
+See **[Developer Setup Guide](docs/guides/DEVELOPER-SETUP.md)** for complete configuration.
 
 ---
 
-## 🧪 Testing
+## Architecture Highlights
 
-### Run All Tests (PHP + Node.js)
+### Sweep Workflow
+
+1. **Deposit Detection**: Monitor blockchain for incoming tokens
+2. **Gas Funding**: Fund deposit address with native tokens (ETH/BNB/MATIC)
+3. **Confirmation Wait**: Wait for funding transaction confirmation
+4. **Token Sweep**: Transfer ERC-20 tokens to hot wallet
+5. **Logging**: Record sweep with transaction hash and status
+
+### Service Layer (PHP)
+
+- **SweeperService**: Core sweep orchestration
+- **MonitorService**: Blockchain deposit monitoring
+- **WalletService**: HD wallet generation (BIP-44)
+- **TransactionSignerService**: Transaction signing
+- **Web3Service**: RPC communication wrapper
+
+### Event-Driven Architecture
+
+- `DepositDetected` → Triggers funding and sweep
+- `SweepStarted` → Emitted when sweep begins
+- `SweepCompleted` → Emitted on completion
+
+See **[Architecture Overview](docs/architecture/ARCHITECTURE.md)** for details.
+
+---
+
+## Security Best Practices
+
+- **Private Keys**: Encrypted at rest using Laravel Crypt (AES-256-GCM)
+- **Environment Variables**: Never commit `.env` files
+- **Wallet Separation**: Separate master (funding) and hot (collection) wallets
+- **RPC Security**: Use authenticated RPC endpoints
+- **Rate Limiting**: Implement on public API endpoints
+- **Logging**: Monitor sweep logs for suspicious activity
+
+---
+
+## Development
+
+### Git Workflow
+
+This project follows **Git Flow** branching model:
+
+- `main` - Production releases only
+- `develop` - Integration branch
+- `feature/*` - New features
+- `release/*` - Release preparation
+- `hotfix/*` - Production fixes
+
+See **[Git Workflow Guide](docs/guides/GIT-WORKFLOW.md)** for details.
+
+### Commit Convention
+
+Follow **Conventional Commits**:
 
 ```bash
-npm test
+feat(wallet): Add BIP-44 derivation support
+fix(sweeper): Resolve gas estimation issue on BSC
+docs(api): Add OpenAPI specification
+test(services): Add unit tests for WalletService
 ```
 
-### PHP Tests Only
+### Code Standards
 
-```bash
-npm run test:php
-# or
-composer test
-```
-
-### Node.js Tests Only
-
-```bash
-npm run test:node
-```
+- **PHP**: PSR-12 coding standard
+- **Node.js**: ESLint with recommended rules
+- **Tests**: Required for new features
+- **Documentation**: Update relevant docs
 
 ---
 
-## 📖 Documentation
+## Deployment
 
-### PHP/Laravel Documentation
-
-- **[Usage Guide](php/docs/USAGE.md)** - Comprehensive usage instructions
-- **[API Reference](php/docs/API-REFERENCE.md)** - Complete API documentation
-- **[Troubleshooting](php/docs/TROUBLESHOOTING.md)** - Common issues and solutions
-
-### Project Documentation
-
-- **[Complete Package Report](docs/COMPLETE-PACKAGE-REPORT.md)** - Full project overview
-- **[Test Report](docs/TEST-REPORT.md)** - Test suite analysis
-- **[Archive Report](docs/ARCHIVE-AND-NAMESPACE-UPDATE-REPORT.md)** - Migration history
-
----
-
-## 🏃 Development Workflow
-
-### Working with PHP Code
-
-```bash
-# Run tests in watch mode (if using phpunit-watcher)
-composer test:unit -- --filter MyTest
-
-# Check code style
-composer format
-
-# Run static analysis
-composer analyse
-```
-
-### Working with Node.js Code
-
-```bash
-# Development mode
-npm run dev
-
-# Run specific test
-npm test -- --testNamePattern="MyTest"
-
-# Lint code
-npm run lint
-```
-
----
-
-## 🔒 Security
-
-### Private Key Storage
-
-- **PHP:** Uses Laravel's `Crypt` facade with AES-256-GCM encryption
-- **Node.js:** Uses environment variables with proper `.env` handling
-
-### Best Practices
-
-1. Never commit `.env` files
-2. Use separate wallets for master (gas funding) and hot (token collection)
-3. Rotate private keys regularly
-4. Monitor sweep logs for suspicious activity
-5. Use rate limiting on API endpoints
-
----
-
-## 🚢 Deployment
-
-### PHP/Laravel Deployment
+### PHP/Laravel
 
 ```bash
 # Production install
@@ -334,7 +397,7 @@ php artisan migrate --force
 php artisan queue:work --daemon
 ```
 
-### Node.js Deployment
+### Node.js
 
 ```bash
 # Install production dependencies
@@ -347,79 +410,62 @@ pm2 start nodejs/src/index.js --name token-sweeper
 docker-compose up -d
 ```
 
----
-
-## 📊 Architecture
-
-### PHP Architecture
-
-- **Models:** 5 Eloquent models with relationships
-- **Services:** 5 business logic services
-- **Jobs:** 3 queue jobs for async processing
-- **Events:** 3 Laravel events for workflow
-- **Commands:** 7 Artisan commands
-
-### Node.js Architecture
-
-- **Services:** Modular service-based architecture
-- **Database:** PostgreSQL with connection pooling
-- **API:** RESTful API with Express.js
+See **[Developer Setup](docs/guides/DEVELOPER-SETUP.md)** for detailed deployment instructions.
 
 ---
 
-## 🤝 Contributing
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
-
-### Development Guidelines
-
-- Follow PSR-12 for PHP code
-- Use ESLint for Node.js code
-- Write tests for new features
-- Update documentation
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 📧 Support
-
-- **Email:** dev@multicoin.com
-- **Documentation:** See `docs/` directory
-- **Issues:** [GitHub Issues](https://github.com/multicoin/token-sweeper/issues)
-
----
-
-## 🎯 Roadmap
+## Roadmap
 
 - [x] Multi-chain support (5 chains)
 - [x] Laravel package implementation
 - [x] Node.js implementation
-- [x] Comprehensive test suite
-- [x] Documentation
+- [x] Comprehensive test suite (248 tests)
+- [x] Complete documentation suite
 - [ ] GraphQL API
 - [ ] Real-time WebSocket updates
-- [ ] Dashboard UI
-- [ ] Additional chain support (Avalanche, Fantom)
+- [ ] Admin dashboard UI
+- [ ] Additional chains (Avalanche, Fantom, Base)
 - [ ] Multi-tenant support
 
 ---
 
-## ⭐ Acknowledgments
+## Contributing
 
-- Laravel Framework
-- Ethers.js
-- Web3.php
-- Orchestra Testbench
+We welcome contributions! Please follow these steps:
+
+1. Fork the repository
+2. Create a feature branch: `git checkout -b feature/amazing-feature`
+3. Make your changes and add tests
+4. Ensure tests pass: `composer test && npm test`
+5. Commit: `git commit -m 'feat: Add amazing feature'`
+6. Push: `git push origin feature/amazing-feature`
+7. Open a Pull Request targeting `develop` branch
+
+See **[Git Workflow Guide](docs/guides/GIT-WORKFLOW.md)** for detailed contribution guidelines.
 
 ---
 
-**Built with ❤️ by the Multicoin Team**
+## Support
+
+- **Documentation**: [docs/](docs/)
+- **Issues**: [GitHub Issues](https://github.com/multicoin/token-sweeper/issues)
+- **Email**: dev@multicoin.com
+
+---
+
+## License
+
+This project is licensed under the MIT License. See [LICENSE](LICENSE) file for details.
+
+---
+
+## Acknowledgments
+
+- Laravel Framework
+- Ethers.js
+- Orchestra Testbench
+- simplito/elliptic-php
+
+---
+
+**Built by the Multicoin Team**

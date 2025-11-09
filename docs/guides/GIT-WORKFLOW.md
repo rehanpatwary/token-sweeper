@@ -362,4 +362,4 @@ git branch -vv
 
 ---
 
-**Questions?** Open an issue or check the [Developer Setup Guide](./docs/DEVELOPER-SETUP.md)
+**Questions?** Open an issue or check the [Developer Setup Guide](DEVELOPER-SETUP.md)
