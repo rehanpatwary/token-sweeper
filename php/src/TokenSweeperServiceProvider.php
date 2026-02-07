@@ -18,7 +18,7 @@ class TokenSweeperServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__ . '/config/token-sweeper.php',
+            __DIR__ . '/Config/token-sweeper.php',
             'token-sweeper'
         );
     }
@@ -27,11 +27,11 @@ class TokenSweeperServiceProvider extends ServiceProvider
     {
         // Publish config
         $this->publishes([
-            __DIR__ . '/config/token-sweeper.php' => config_path('token-sweeper.php'),
+            __DIR__ . '/Config/token-sweeper.php' => config_path('token-sweeper.php'),
         ], 'token-sweeper-config');
 
         // Load migrations
-        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
         // Load routes
         $this->loadRoutesFrom(__DIR__ . '/routes/api.php');

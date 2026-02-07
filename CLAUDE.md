@@ -39,7 +39,7 @@ npm start
 # Development mode with auto-reload
 npm run dev
 
-# Run tests
+# Run tests (note: no test files currently exist)
 npm run test:node
 
 # Watch mode for testing
@@ -88,16 +88,16 @@ The codebase maintains **two independent implementations** of the same sweeper l
 ### PHP Architecture
 
 **Service Layer Pattern:**
-- `SweeperService`: Core sweep orchestration (fund address → sweep tokens)
-- `MonitorService`: Watches blockchain for deposits
-- `WalletService`: HD wallet generation and key management
-- `TransactionSignerService`: Signs raw Ethereum transactions
-- `Web3Service`: RPC communication wrapper
+- `SweeperService` (`php/src/Sweeper/`): Core sweep orchestration (fund address -> sweep tokens)
+- `MonitorService` (`php/src/Sweeper/`): Watches blockchain for deposits
+- `WalletService` (`php/src/Services/`): HD wallet generation and key management
+- `TransactionSignerService` (`php/src/Services/`): Signs raw Ethereum transactions
+- `Web3Service` (`php/src/Services/`): RPC communication wrapper
 
 **Event-Driven Workflow:**
-- `DepositDetected` → triggers funding/sweep
-- `SweepStarted` → emitted when sweep begins
-- `SweepCompleted` → emitted when sweep finishes
+- `DepositDetected` -> triggers funding/sweep
+- `SweepStarted` -> emitted when sweep begins
+- `SweepCompleted` -> emitted when sweep finishes
 
 **Queue Jobs:**
 - `FundDepositAddress`: Sends native gas to deposit address
@@ -105,7 +105,7 @@ The codebase maintains **two independent implementations** of the same sweeper l
 - `CheckPendingSweeps`: Monitors pending sweep confirmations
 
 **Models & Relationships:**
-- `Chain`: Blockchain configuration (1:many → Tokens, DepositAddresses)
+- `Chain`: Blockchain configuration (1:many -> Tokens, DepositAddresses)
 - `Token`: ERC-20 token definitions (belongs to Chain)
 - `DepositAddress`: User deposit addresses (belongs to Chain, User)
 - `PendingSweep`: In-progress sweeps (belongs to Chain)
@@ -118,6 +118,17 @@ The codebase maintains **two independent implementations** of the same sweeper l
 4. `pending_sweeps` (references chains, tokens)
 5. `sweep_logs` (references chains, tokens)
 
+**PHP API Routes** (mounted at `/api/sweeper/`):
+- `GET /api/sweeper/health`: Health check
+- `GET /api/sweeper/chains`: List supported chains
+- `GET /api/sweeper/tokens`: List active tokens (optional `?chain_id=` filter)
+- `POST /api/sweeper/deposit-address`: Generate deposit address (requires `user_id`, `chain_id`)
+- `GET /api/sweeper/user-addresses`: List user addresses (requires `?user_id=`)
+- `GET /api/sweeper/sweep-status`: Check sweep status (requires `?address=&chain_id=`)
+- `GET /api/sweeper/pending-sweeps`: List pending sweeps (optional `?status=&chain_id=`)
+- `GET /api/sweeper/sweep-logs`: View sweep history (optional `?chain_id=&limit=`)
+- `POST /api/sweeper/process-sweep`: Trigger a sweep (requires `deposit_address`, `token_address`, `chain_id`)
+
 ### Node.js Architecture
 
 **Service-Based Structure:**
@@ -126,10 +137,10 @@ The codebase maintains **two independent implementations** of the same sweeper l
 - `DepositAddressGenerator.js`: HD wallet address generation
 - PostgreSQL with connection pooling for data persistence
 
-**API Routes:**
+**Node.js API Routes** (mounted at `/api/`):
 - `POST /api/deposit-address`: Generate new deposit address
 - `GET /api/sweep-status/:address`: Check sweep status
-- `GET /health`: Health check endpoint
+- `GET /health`: Health check endpoint (separate from `/api/` prefix)
 
 ### Shared Concepts
 
@@ -151,48 +162,65 @@ The codebase maintains **two independent implementations** of the same sweeper l
 ```
 php/src/
 ├── Commands/           # 7 Artisan commands
-├── Controllers/        # API controller
-├── Events/            # 3 Laravel events
-├── Facades/           # TokenSweeper facade
-├── Jobs/              # 3 queue jobs
-├── Models/            # 5 Eloquent models
-├── Services/          # Business logic services
-├── Sweeper/           # SweeperService, MonitorService
-├── Config/            # token-sweeper.php config
-└── routes/            # api.php routes
+├── Config/             # token-sweeper.php config (note: capital C)
+├── Controllers/        # TokenSweeperController (API)
+├── Events/             # 3 Laravel events
+├── Facades/            # TokenSweeper facade
+├── Jobs/               # 3 queue jobs
+├── Models/             # 5 Eloquent models
+├── Services/           # WalletService, Web3Service, TransactionSignerService
+├── Sweeper/            # SweeperService, MonitorService
+├── routes/             # api.php route definitions
+└── TokenSweeperServiceProvider.php
 
 php/database/
-├── migrations/        # 5 migrations (ordered)
-└── schema.sql         # Complete database schema
-
-nodejs/src/
-├── controllers/       # API controllers
-├── models/            # Database models
-├── routes/            # Express routes
-├── services/          # Business logic
-└── index.js           # Main application entry
+├── migrations/         # 5 migrations (ordered)
+└── schema.sql          # Complete database schema
 
 php/tests/
-├── Unit/              # Unit tests (models, services)
-└── Feature/           # Feature/integration tests
+├── TestCase.php        # Base test case (Orchestra Testbench)
+├── Unit/
+│   ├── Models/         # ChainTest, DepositAddressTest, PendingSweepTest, SweepLogTest, TokenTest
+│   ├── Services/       # WalletServiceTest, Web3ServiceTest
+│   └── Jobs/           # CheckPendingSweepsTest, FundDepositAddressTest, SweepTokensTest
+└── Feature/            # CommandsTest, DepositAddressTest, SweepWorkflowTest
+
+nodejs/src/
+├── controllers/        # DepositController.js
+├── routes/             # api.js
+├── services/           # TokenMonitor.js, TokenSweeper.js, DepositAddressGenerator.js
+└── index.js            # Main application entry (Express + monitoring startup)
+
+docs/
+├── README.md           # Documentation index
+├── openapi.yaml        # OpenAPI/Swagger specification
+├── guides/             # QUICK-START.md, DEVELOPER-SETUP.md, API-GUIDE.md, GIT-WORKFLOW.md
+├── architecture/       # ARCHITECTURE.md
+├── reference/          # MONOREPO-MIGRATION-REPORT.md, TEST-REPORT.md, VERIFICATION-REPORT.md, COMPLETE-PACKAGE-REPORT.md
+└── api/                # index.html (generated API docs)
+
+php/docs/               # USAGE.md, API-REFERENCE.md, TROUBLESHOOTING.md
 ```
 
 ## Configuration & Environment
 
-**PHP Configuration** (`config/token-sweeper.php`):
+**PHP Configuration** (`php/src/Config/token-sweeper.php`):
 - `monitoring.check_interval`: Seconds between deposit checks (default: 5)
 - `monitoring.block_confirmations`: Required confirmations (default: 1)
 - `monitoring.max_retry_attempts`: Max sweep retries (default: 3)
-- `rpc_urls`: Chain ID → RPC endpoint mapping
-- `default_chains`: Seeded chain configurations
-- `default_tokens`: Seeded token definitions (USDT, USDC, DAI)
+- `monitoring.retry_delay`: Seconds between retries (default: 60)
+- `rpc_urls`: Chain ID -> RPC endpoint mapping (1=ETH, 56=BSC, 137=Polygon, 42161=Arbitrum, 10=Optimism)
+- `default_chains`: Seeded chain configurations (Ethereum, BSC, Polygon)
+- `default_tokens`: Seeded token definitions (USDT, USDC, DAI on ETH; USDT, USDC on BSC and Polygon)
 
 **Environment Variables:**
-- `ETH_RPC_URL`, `BSC_RPC_URL`, `POLYGON_RPC_URL`, etc.: RPC endpoints
-- `ETH_MASTER_WALLET`, `ETH_MASTER_KEY_ENCRYPTED`: Master wallet credentials
-- `ETH_HOT_WALLET`: Hot wallet address for token collection
+- `ETH_RPC_URL`, `BSC_RPC_URL`, `POLYGON_RPC_URL`, `ARB_RPC_URL`, `OP_RPC_URL`: RPC endpoints
+- `ETH_MASTER_WALLET`, `ETH_MASTER_KEY_ENCRYPTED`: Master wallet credentials (per chain: BSC_, POLYGON_)
+- `ETH_HOT_WALLET`: Hot wallet address for token collection (per chain: BSC_, POLYGON_)
 - `NOWNODES_API_KEY`: NowNodes API key for RPC access
+- `SWEEPER_CHECK_INTERVAL`, `SWEEPER_CONFIRMATIONS`, `SWEEPER_MAX_RETRIES`, `SWEEPER_RETRY_DELAY`: Monitoring config overrides
 - `DB_CONNECTION`, `DB_HOST`, `DB_DATABASE`: Database configuration
+- `PORT`: Node.js server port (default: 3000)
 
 ## Testing Strategy
 
@@ -201,11 +229,22 @@ php/tests/
 - In-memory SQLite database (`DB_CONNECTION=sqlite`, `DB_DATABASE=:memory:`)
 - Test environment variables set automatically
 - 248 total tests across Unit and Feature suites
+- `failOnWarning` and `failOnRisky` both set to `false`
 
-**Test Coverage:**
-- 217/248 tests passing (87.5% as documented)
-- Focus on models, services, commands, and jobs
+**Test Status:**
+- 217/248 tests passing (87.5%)
+- 22 errors + 9 failures, all in Job tests and some Feature/CommandsTest
+- Failing tests are concentrated in:
+  - `Unit/Jobs/CheckPendingSweepsTest` (9 errors)
+  - `Unit/Jobs/FundDepositAddressTest` (4 errors + 4 failures)
+  - `Unit/Jobs/SweepTokensTest` (7 errors + 5 failures)
+  - `Feature/CommandsTest` (2 errors + 1 failure)
+- 217 PHPUnit deprecation warnings (non-blocking)
 - Mock Web3 interactions to avoid live blockchain calls
+
+**Node.js Tests:**
+- Jest is configured in `package.json` but no test files currently exist under `nodejs/`
+- `npm run test:node` will exit with an error (no tests found)
 
 **Running Specific Tests:**
 - Filter by test name: `--filter testMethodName`
@@ -213,6 +252,15 @@ php/tests/
 - Test specific suite: `--testsuite=Unit` or `--testsuite=Feature`
 
 ## Important Implementation Details
+
+### Service Provider Paths
+
+The `TokenSweeperServiceProvider` (`php/src/TokenSweeperServiceProvider.php`) loads:
+- Config from `__DIR__ . '/Config/token-sweeper.php'` (capital C in Config)
+- Migrations from `__DIR__ . '/../database/migrations'` (up one level to `php/database/`)
+- Routes from `__DIR__ . '/routes/api.php'`
+
+The base `TestCase` also loads migrations independently from `__DIR__ . '/../database/migrations'` (relative to `php/tests/`).
 
 ### Cryptographic Signing
 
@@ -230,9 +278,9 @@ php/tests/
 ### Gas Estimation
 
 **Default Gas Amounts** (from config):
-- Ethereum: 0.002 ETH
-- BSC: 0.001 BNB
-- Polygon: 0.1 MATIC
+- Ethereum: 0.002 ETH (2000000000000000 wei)
+- BSC: 0.001 BNB (1000000000000000 wei)
+- Polygon: 0.1 MATIC (100000000000000000 wei)
 
 **Gas Limit for Token Transfers:** 100,000 (configurable per chain)
 
@@ -242,12 +290,11 @@ Monitor transaction confirmations before marking sweep as complete. Default: 1 c
 
 ### Error Handling
 
-Retry failed sweeps up to `max_retry_attempts` with `retry_delay` seconds between attempts. Log all failures to `sweep_logs` table with error messages.
+Retry failed sweeps up to `max_retry_attempts` (default: 3) with `retry_delay` (default: 60) seconds between attempts. Log all failures to `sweep_logs` table with error messages.
 
 ## Package Installation (for Laravel Apps)
 
 ```json
-// composer.json
 {
     "require": {
         "multicoin/token-sweeper": "^1.0"
@@ -260,14 +307,14 @@ Retry failed sweeps up to `max_retry_attempts` with `retry_delay` seconds betwee
 ## Common Development Tasks
 
 **Adding a New Blockchain:**
-1. Add chain configuration to `config/token-sweeper.php` default_chains
+1. Add chain configuration to `php/src/Config/token-sweeper.php` default_chains
 2. Add RPC URL environment variable
 3. Seed chain data: `php artisan sweeper:seed`
 4. Update both PHP and Node.js implementations
 5. Add integration tests
 
 **Adding a New Token:**
-1. Add to `config/token-sweeper.php` default_tokens
+1. Add to `php/src/Config/token-sweeper.php` default_tokens
 2. Ensure chain exists first
 3. Run seed command or manually create Token record
 4. Test with small amount first
@@ -296,6 +343,10 @@ Retry failed sweeps up to `max_retry_attempts` with `retry_delay` seconds betwee
 
 ## Dependencies
 
+**Runtime Requirements:**
+- PHP >= 8.2
+- Node.js >= 18.0.0
+
 **PHP Core:**
 - `illuminate/support`, `illuminate/database`, `illuminate/console`: ^10.0|^11.0
 - `simplito/elliptic-php`: Elliptic curve cryptography
@@ -304,14 +355,18 @@ Retry failed sweeps up to `max_retry_attempts` with `retry_delay` seconds betwee
 
 **PHP Dev:**
 - `phpunit/phpunit`: ^11.0
-- `orchestra/testbench`: Laravel package testing
-- `mockery/mockery`: Mocking framework
+- `orchestra/testbench`: ^8.0|^9.0
+- `mockery/mockery`: ^1.6
 
 **Node.js:**
 - `ethers`: ^6.9.0 (v6 API, not v5)
 - `express`: ^4.18.2
 - `pg`: ^8.11.3 (PostgreSQL client)
 - `dotenv`: ^16.3.1
+
+**Node.js Dev:**
+- `jest`: ^29.7.0
+- `nodemon`: ^3.0.1
 
 ## Namespace & PSR-4
 
