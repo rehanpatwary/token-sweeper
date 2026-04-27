@@ -6,7 +6,7 @@
 
 ```bash
 # 1. Navigate to Node.js app
-cd nodejs-app
+cd nodejs
 
 # 2. Install dependencies
 npm install
@@ -25,17 +25,17 @@ npm start
 # Server running on http://localhost:3000
 ```
 
-### Option 2: Laravel Package
+### Option 2: PHP / Laravel Package
 
 ```bash
 # 1. Navigate to Laravel package
-cd laravel-package
+cd php
 
 # 2. Install dependencies
 composer install
 
 # 3. Integrate into your Laravel app
-# (See laravel-package/README.md for detailed instructions)
+# (See php/docs/USAGE.md for detailed instructions)
 
 # 4. Publish configuration
 php artisan vendor:publish --tag=token-sweeper-config
@@ -129,10 +129,10 @@ Published via `php artisan vendor:publish --tag=token-sweeper-config`
 ### Node.js won't start
 ```bash
 # Check if .env exists
-ls -la nodejs-app/.env
+ls -la nodejs/.env
 
 # Verify dependencies installed
-cd nodejs-app && npm list --depth=0
+cd nodejs && npm list --depth=0
 
 # Check database connection
 psql -d sweeper_db -c "SELECT 1"
@@ -160,7 +160,7 @@ Run these commands to verify everything is set up correctly:
 
 ```bash
 # Node.js
-cd nodejs-app
+cd nodejs
 npm start &
 curl http://localhost:3000/health
 # Should return: {"status":"ok","timestamp":"..."}
@@ -176,11 +176,12 @@ php artisan sweeper:balance 0x... --chain_id=1
 ## 📊 Project Structure
 
 ```
-eth-sweeper-for-token/
-├── nodejs-app/          # Node.js implementation
-├── laravel-package/     # Laravel package
-├── shared/              # Shared resources
-└── examples/            # Example code
+token-sweeper/
+├── docs/              # Project documentation and guides
+├── nodejs/            # Node.js implementation
+├── php/               # Laravel/Lumen package
+├── package.json       # Node.js dependency manifest
+└── composer.json      # PHP dependency manifest
 ```
 
 ---
