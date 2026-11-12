@@ -2,6 +2,7 @@
 
 namespace Multicoin\TokenSweeper\Tests\Unit\Support;
 
+use Multicoin\TokenSweeper\Support\MasterNonceLock;
 use Multicoin\TokenSweeper\Support\Quantity;
 use PHPUnit\Framework\TestCase;
 
@@ -61,6 +62,12 @@ class QuantityTest extends TestCase
         } finally {
             bcscale($previous);
         }
+    }
+
+    /** @test */
+    public function it_holds_the_master_nonce_lock_longer_than_the_rpc_calls_inside_it(): void
+    {
+        $this->assertGreaterThan(30 * 3, MasterNonceLock::HOLD_SECONDS);
     }
 
     /** @test */

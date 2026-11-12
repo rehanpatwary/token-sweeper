@@ -6,11 +6,12 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\{InteractsWithQueue, SerializesModels};
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Multicoin\TokenSweeper\Exceptions\SweepRevertedException;
 use Multicoin\TokenSweeper\Models\{Chain, PendingSweep};
 use Multicoin\TokenSweeper\Services\{TransactionSignerService, WalletService};
 use Multicoin\TokenSweeper\Support\ChainRpc;
+use Multicoin\TokenSweeper\Support\MasterNonceLock;
 use Multicoin\TokenSweeper\Support\Quantity;
 
 class FundDepositAddress implements ShouldQueue
@@ -42,8 +43,11 @@ class FundDepositAddress implements ShouldQueue
                 return;
             }
 
-            $lock = Cache::lock('sweeper-master-nonce-' . $chain->chain_id, 30);
-            $txHash = $lock->block(15, function () use ($chain, $web3, $walletService, $signer) {
+            $txHash = MasterNonceLock::acquire((int) $chain->chain_id)->block(15, function () use ($chain, $web3, $walletService, $signer) {
+                if (Quantity::compare($web3->getBalance($this->sweep->deposit_address), $chain->gas_amount_wei) >= 0) {
+                    return null;
+                }
+
                 $masterWallet = $walletService->getMasterWallet($chain->chain_id);
                 $transaction = [
                     'nonce' => Quantity::toInt($web3->getTransactionCount($masterWallet['address'])),
@@ -67,12 +71,25 @@ class FundDepositAddress implements ShouldQueue
                 return $hash;
             });
 
+            if ($txHash === null) {
+                Log::info("Address already has sufficient gas");
+                SweepTokens::dispatch($this->sweep);
+                return;
+            }
+
             if ($web3->waitForConfirmation($txHash) !== true) {
-                throw new \RuntimeException("Funding transaction reverted: {$txHash}");
+                throw new SweepRevertedException("Funding transaction reverted: {$txHash}");
             }
 
             SweepTokens::dispatch($this->sweep);
 
+        } catch (SweepRevertedException $e) {
+            Log::error("Funding failed", [
+                'sweep_id' => $this->sweep->id,
+                'error' => $e->getMessage(),
+            ]);
+            $this->sweep->markAsFailed($e->getMessage());
+            $this->sweep->incrementRetry();
         } catch (\Throwable $e) {
             Log::error("Funding failed", [
                 'sweep_id' => $this->sweep->id,
@@ -80,9 +97,13 @@ class FundDepositAddress implements ShouldQueue
             ]);
 
             $this->sweep->markAsFailed($e->getMessage());
-            $this->sweep->incrementRetry();
 
             throw $e;
         }
+    }
+
+    public function failed(\Throwable $e): void
+    {
+        $this->sweep->incrementRetry();
     }
 }

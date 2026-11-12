@@ -21,13 +21,24 @@ class CheckPendingSweeps implements ShouldQueue
     {
         $maxRetries = config('token-sweeper.monitoring.max_retry_attempts');
         $retryDelay = config('token-sweeper.monitoring.retry_delay');
+        $staleMinutes = config('token-sweeper.monitoring.stale_sweep_minutes', 15);
         $maxRetries = is_numeric($maxRetries) ? (int) $maxRetries : 3;
         $retryDelay = is_numeric($retryDelay) ? (int) $retryDelay : 60;
+        $staleMinutes = is_numeric($staleMinutes) ? (int) $staleMinutes : 15;
 
-        // Get failed sweeps that can be retried. retry_delay is minutes.
-        $failedSweeps = PendingSweep::failed()
-            ->where('retry_count', '<', $maxRetries)
-            ->where('updated_at', '<', now()->subMinutes($retryDelay))
+        // Failed rows wait retry_delay minutes. In-progress rows older than
+        // stale_sweep_minutes were abandoned by a crashed worker.
+        $failedSweeps = PendingSweep::query()
+            ->where(function ($query) use ($maxRetries, $retryDelay, $staleMinutes) {
+                $query->where(function ($failed) use ($maxRetries, $retryDelay) {
+                    $failed->where('status', 'failed')
+                        ->where('retry_count', '<', $maxRetries)
+                        ->where('updated_at', '<', now()->subMinutes($retryDelay));
+                })->orWhere(function ($stale) use ($staleMinutes) {
+                    $stale->whereIn('status', ['pending', 'funding', 'sweeping'])
+                        ->where('updated_at', '<', now()->subMinutes($staleMinutes));
+                });
+            })
             ->get();
 
         $failure = null;

@@ -13,7 +13,7 @@ These rules apply to `SweeperService::processSweep` and to the `FundDepositAddre
 
 - The deposit address is funded only when its native balance is strictly below `chains.gas_amount_wei`.
 - The value field of that transaction is exactly `gas_amount_wei`, interpreted as a decimal integer when it has no `0x` prefix.
-- Funding uses the master wallet. The nonce is `eth_getTransactionCount(address, "pending")`, taken inside a per-chain cache lock so two funding transactions are not signed with the same nonce in one process.
+- Funding uses the master wallet. The nonce is `eth_getTransactionCount(address, "pending")`, taken inside a per-chain cache lock. The lock is held for 120 seconds, which covers the RPC calls inside it, and it is released before waiting for the receipt. The native balance is read again inside the lock so a second funder does not send gas that the first funder already sent.
 - A funding receipt of `0x0` fails the sweep. The token transfer is not sent.
 
 ## Signing
@@ -23,7 +23,8 @@ These rules apply to `SweeperService::processSweep` and to the `FundDepositAddre
 
 ## Idempotency and retries
 
-- While a row for the same chain, deposit address, and token is `pending`, `funding`, or `sweeping`, `processSweep` returns true and does not broadcast another transaction.
+- While a row for the same chain, deposit address, and token is `pending`, `funding`, or `sweeping` and was updated within `monitoring.stale_sweep_minutes` (default 15), `processSweep` returns true and does not broadcast another transaction. An older in-progress row is treated as abandoned and is resumed. `CheckPendingSweeps` selects those stale rows as well as failed rows.
+- A reverted receipt marks the sweep failed and increments `retry_count` once. It does not raise into the queue, so the worker does not immediately broadcast the same funding or transfer again. Other failures are rethrown for the queue, and `retry_count` increases once when the job has used its attempts.
 - A later call reuses the newest `failed` row whose `retry_count` is still below `max_retry_attempts` instead of inserting a second row. Success does not reset `retry_count`. Failure increments it.
 - `CheckPendingSweeps` selects failed rows older than `retry_delay` minutes. One throwing retry does not skip the rest of the batch; the first exception is rethrown after the batch.
 

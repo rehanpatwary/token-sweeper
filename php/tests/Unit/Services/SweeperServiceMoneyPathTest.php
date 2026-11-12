@@ -254,6 +254,40 @@ class SweeperServiceMoneyPathTest extends TestCase
         $this->assertSame(0, Quantity::compare($captured, '9999580000000000000'));
     }
 
+    /** @test */
+    public function it_resumes_a_funding_sweep_that_the_worker_abandoned(): void
+    {
+        Config::set('token-sweeper.monitoring.stale_sweep_minutes', 15);
+
+        $stuck = PendingSweep::create([
+            'deposit_address' => self::DEPOSIT,
+            'chain_id' => 1,
+            'token_address' => strtolower(self::TOKEN),
+            'token_symbol' => 'DAI',
+            'amount' => '1',
+            'status' => 'funding',
+        ]);
+        $stuck->forceFill(['updated_at' => now()->subMinutes(16)])->saveQuietly();
+
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $signer->shouldReceive('signTransaction')->once()->andReturn('0xsigned');
+
+        $web3 = Mockery::mock(Web3Service::class);
+        $web3->shouldReceive('callContract')->andReturn('0x56bc75e2d63100000');
+        $web3->shouldReceive('getBalance')->andReturn('0x71afd498d0000', '0x0');
+        $web3->shouldReceive('getTransactionCount')->andReturn('0x1');
+        $web3->shouldReceive('gasPrice')->andReturn('0x4a817c800');
+        $web3->shouldReceive('sendRawTransaction')->once()->andReturn('0x' . str_repeat('11', 32));
+        $web3->shouldReceive('waitForConfirmation')->once()->andReturn(true);
+        $this->app->instance(Web3Service::class, $web3);
+
+        $this->assertTrue($this->sweeper($signer)->processSweep(self::DEPOSIT, self::TOKEN, 1));
+        $this->assertSame(1, PendingSweep::count());
+        $stuck->refresh();
+        $this->assertSame('completed', $stuck->status);
+        $this->assertSame(self::ONE_HUNDRED_TOKENS, $stuck->amount);
+    }
+
     private function sweeper(?TransactionSignerService $signer = null): SweeperService
     {
         return new SweeperService(new WalletService(), $signer ?? new TransactionSignerService());

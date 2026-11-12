@@ -142,9 +142,9 @@ class FundDepositAddressTest extends TestCase
         // Mock Web3Service
         $web3Mock = Mockery::mock(Web3Service::class);
         $web3Mock->shouldReceive('getBalance')
-            ->once()
+            ->twice()
             ->with($this->sweep->deposit_address)
-            ->andReturn('0x0'); // No balance initially
+            ->andReturn('0x0'); // No balance initially, and still none inside the nonce lock
 
         $web3Mock->shouldReceive('getTransactionCount')
             ->once()
@@ -259,6 +259,9 @@ class FundDepositAddressTest extends TestCase
         $this->sweep->refresh();
         $this->assertEquals('failed', $this->sweep->status);
         $this->assertEquals('Wallet not found', $this->sweep->error_message);
+        $this->assertEquals(0, $this->sweep->retry_count);
+        $job->failed(new \RuntimeException('Wallet not found'));
+        $this->sweep->refresh();
         $this->assertEquals(1, $this->sweep->retry_count);
     }
 
@@ -283,7 +286,7 @@ class FundDepositAddressTest extends TestCase
         try {
             $job->handle($walletService, $signer);
         } catch (\Exception $e) {
-            // Expected
+            $job->failed($e);
         }
 
         $this->sweep->refresh();
@@ -494,15 +497,11 @@ class FundDepositAddressTest extends TestCase
         $web3Mock->shouldReceive('waitForConfirmation')->once()->with($txHash)->andReturn(false);
         $this->app->instance(Web3Service::class, $web3Mock);
 
-        try {
-            (new FundDepositAddress($this->sweep))->handle($walletService, $signer);
-            $this->fail('A reverted funding transaction must fail the job');
-        } catch (\RuntimeException $e) {
-            $this->assertStringContainsString('reverted', strtolower($e->getMessage()));
-        }
+        (new FundDepositAddress($this->sweep))->handle($walletService, $signer);
 
         $this->sweep->refresh();
         $this->assertSame('failed', $this->sweep->status);
+        $this->assertSame(1, $this->sweep->retry_count);
         Queue::assertNotPushed(SweepTokens::class);
     }
 
@@ -541,5 +540,57 @@ class FundDepositAddressTest extends TestCase
 
         $this->assertTrue($releasedDuringConfirmation);
         Queue::assertPushed(SweepTokens::class);
+    }
+
+    /** @test */
+    public function it_rechecks_the_balance_inside_the_nonce_lock_before_sending_gas(): void
+    {
+        Queue::fake();
+        Log::shouldReceive('info');
+
+        $this->chain->update(['gas_amount_wei' => '2000000000000000']);
+
+        $walletService = Mockery::mock(WalletService::class);
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $signer->shouldNotReceive('signTransaction');
+
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('getBalance')->andReturn('0x0', '0x71afd498d0000');
+        $web3Mock->shouldNotReceive('sendRawTransaction');
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        (new FundDepositAddress($this->sweep))->handle($walletService, $signer);
+
+        Queue::assertPushed(SweepTokens::class);
+    }
+
+    /** @test */
+    public function it_records_one_retry_when_the_queue_gives_up_after_a_transient_failure(): void
+    {
+        Log::shouldReceive('error');
+
+        $walletService = Mockery::mock(WalletService::class);
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('getBalance')->andThrow(new \RuntimeException('RPC timeout'));
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        $job = new FundDepositAddress($this->sweep);
+        $caught = null;
+
+        try {
+            $job->handle($walletService, $signer);
+            $this->fail('A transient RPC failure must be rethrown for the queue');
+        } catch (\RuntimeException $e) {
+            $caught = $e;
+            $this->assertSame('RPC timeout', $e->getMessage());
+        }
+
+        $this->sweep->refresh();
+        $this->assertSame(0, $this->sweep->retry_count);
+
+        $job->failed($caught);
+        $this->sweep->refresh();
+        $this->assertSame(1, $this->sweep->retry_count);
     }
 }

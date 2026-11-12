@@ -296,6 +296,9 @@ class SweepTokensTest extends TestCase
         $this->sweep->refresh();
         $this->assertEquals('failed', $this->sweep->status);
         $this->assertEquals('Private key not found', $this->sweep->error_message);
+        $this->assertEquals(0, $this->sweep->retry_count);
+        $job->failed(new \RuntimeException('Private key not found'));
+        $this->sweep->refresh();
         $this->assertEquals(1, $this->sweep->retry_count);
     }
 
@@ -320,7 +323,7 @@ class SweepTokensTest extends TestCase
         try {
             $job->handle($walletService, $signer);
         } catch (\Exception $e) {
-            // Expected
+            $job->failed($e);
         }
 
         $this->sweep->refresh();
@@ -625,15 +628,11 @@ class SweepTokensTest extends TestCase
         $web3Mock->shouldReceive('waitForConfirmation')->once()->with($txHash)->andReturn(false);
         $this->app->instance(Web3Service::class, $web3Mock);
 
-        try {
-            (new SweepTokens($this->sweep))->handle($walletService, $signer);
-            $this->fail('A reverted token transfer must fail the job');
-        } catch (\RuntimeException $e) {
-            $this->assertStringContainsString('reverted', strtolower($e->getMessage()));
-        }
+        (new SweepTokens($this->sweep))->handle($walletService, $signer);
 
         $this->sweep->refresh();
         $this->assertSame('failed', $this->sweep->status);
+        $this->assertSame(1, $this->sweep->retry_count);
         $this->assertSame(0, SweepLog::where('sweep_id', $this->sweep->id)->count());
         Event::assertNotDispatched(SweepCompleted::class);
     }

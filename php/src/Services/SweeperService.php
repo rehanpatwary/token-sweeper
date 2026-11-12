@@ -13,6 +13,7 @@ use Multicoin\TokenSweeper\Models\SweepLog;
 use Multicoin\TokenSweeper\Models\Token;
 use Multicoin\TokenSweeper\Support\ChainRpc;
 use Multicoin\TokenSweeper\Support\Erc20;
+use Multicoin\TokenSweeper\Support\MasterNonceLock;
 use Multicoin\TokenSweeper\Support\Quantity;
 
 class SweeperService
@@ -147,7 +148,7 @@ class SweeperService
             return 'sufficient_balance';
         }
 
-        $lock = Cache::lock('sweeper-master-nonce-' . $chain->chain_id, 30);
+        $lock = MasterNonceLock::acquire((int) $chain->chain_id);
 
         return $lock->block(15, function () use ($depositAddress, $chain, $web3) {
             $current = $web3->getBalance($depositAddress);
@@ -254,6 +255,7 @@ class SweeperService
     {
         return $this->sweepQuery($depositAddress, $tokenAddress, $chainId)
             ->whereIn('status', ['pending', 'funding', 'sweeping'])
+            ->where('updated_at', '>=', now()->subMinutes($this->staleSweepMinutes()))
             ->exists();
     }
 
@@ -261,8 +263,15 @@ class SweeperService
     {
         $maxRetries = (int) config('token-sweeper.monitoring.max_retry_attempts', 3);
         $existing = $this->sweepQuery($depositAddress, $token->contract_address, $chainId)
-            ->where('status', 'failed')
-            ->where('retry_count', '<', $maxRetries)
+            ->where(function ($query) use ($maxRetries) {
+                $query->where(function ($failed) use ($maxRetries) {
+                    $failed->where('status', 'failed')
+                        ->where('retry_count', '<', $maxRetries);
+                })->orWhere(function ($stale) {
+                    $stale->whereIn('status', ['pending', 'funding', 'sweeping'])
+                        ->where('updated_at', '<', now()->subMinutes($this->staleSweepMinutes()));
+                });
+            })
             ->orderByDesc('id')
             ->first();
 
@@ -293,6 +302,13 @@ class SweeperService
             ->where('chain_id', $chainId)
             ->whereRaw('lower(deposit_address) = ?', [strtolower($depositAddress)])
             ->whereRaw('lower(token_address) = ?', [strtolower($tokenAddress)]);
+    }
+
+    protected function staleSweepMinutes(): int
+    {
+        $minutes = config('token-sweeper.monitoring.stale_sweep_minutes', 15);
+
+        return is_numeric($minutes) ? (int) $minutes : 15;
     }
 
     protected function sweepLockKey(string $depositAddress, string $tokenAddress, int $chainId): string

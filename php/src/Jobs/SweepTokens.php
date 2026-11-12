@@ -8,6 +8,7 @@ use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\{InteractsWithQueue, SerializesModels};
 use Illuminate\Support\Facades\Log;
 use Multicoin\TokenSweeper\Events\SweepCompleted;
+use Multicoin\TokenSweeper\Exceptions\SweepRevertedException;
 use Multicoin\TokenSweeper\Models\{Chain, PendingSweep, SweepLog};
 use Multicoin\TokenSweeper\Services\{TransactionSignerService, WalletService};
 use Multicoin\TokenSweeper\Support\ChainRpc;
@@ -67,7 +68,7 @@ class SweepTokens implements ShouldQueue
             $this->sweep->update(['sweep_tx_hash' => $txHash]);
 
             if ($web3->waitForConfirmation($txHash) !== true) {
-                throw new \RuntimeException("Sweep transaction reverted: {$txHash}");
+                throw new SweepRevertedException("Sweep transaction reverted: {$txHash}");
             }
 
             $this->sweep->markAsCompleted($txHash);
@@ -87,6 +88,13 @@ class SweepTokens implements ShouldQueue
 
             Log::info("Sweep completed successfully", ['sweep_id' => $this->sweep->id]);
 
+        } catch (SweepRevertedException $e) {
+            Log::error("Sweep failed", [
+                'sweep_id' => $this->sweep->id,
+                'error' => $e->getMessage(),
+            ]);
+            $this->sweep->markAsFailed($e->getMessage());
+            $this->sweep->incrementRetry();
         } catch (\Throwable $e) {
             Log::error("Sweep failed", [
                 'sweep_id' => $this->sweep->id,
@@ -94,9 +102,13 @@ class SweepTokens implements ShouldQueue
             ]);
 
             $this->sweep->markAsFailed($e->getMessage());
-            $this->sweep->incrementRetry();
 
             throw $e;
         }
+    }
+
+    public function failed(\Throwable $e): void
+    {
+        $this->sweep->incrementRetry();
     }
 }
