@@ -62,7 +62,7 @@ class WalletService
     {
         $depositAddress = DepositAddress::query()
             ->where('chain_id', $chainId)
-            ->whereRaw('lower(address) = ?', [strtolower($address)])
+            ->where('address', strtolower($address))
             ->firstOrFail();
 
         return Crypt::decryptString($depositAddress->private_key_encrypted);

@@ -42,6 +42,28 @@ class QuantityTest extends TestCase
     }
 
     /** @test */
+    public function it_keeps_integer_results_when_bcmath_scale_is_nonzero(): void
+    {
+        $previous = bcscale(2);
+
+        try {
+            $amount = Quantity::hexToDecimal('0xa');
+
+            $this->assertSame('10', $amount);
+            $this->assertSame(0, Quantity::compare($amount, '10'));
+            $this->assertSame('30', Quantity::add('10', '20'));
+            $this->assertSame('5', Quantity::sub('25', '20'));
+            $this->assertSame('200', Quantity::mul('10', '20'));
+            $this->assertSame(
+                '0000000000000000000000000000000000000000000000056bc75e2d63100000',
+                Quantity::decimalToHex('100000000000000000000', false, 32)
+            );
+        } finally {
+            bcscale($previous);
+        }
+    }
+
+    /** @test */
     public function it_rejects_null_and_blank_quantities(): void
     {
         $this->expectException(\InvalidArgumentException::class);

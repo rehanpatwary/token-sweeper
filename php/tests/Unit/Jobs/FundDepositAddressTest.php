@@ -2,6 +2,7 @@
 
 namespace Multicoin\TokenSweeper\Tests\Unit\Jobs;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
@@ -503,5 +504,42 @@ class FundDepositAddressTest extends TestCase
         $this->sweep->refresh();
         $this->assertSame('failed', $this->sweep->status);
         Queue::assertNotPushed(SweepTokens::class);
+    }
+
+    /** @test */
+    public function it_releases_the_master_nonce_lock_before_waiting_for_confirmation(): void
+    {
+        Queue::fake();
+        Log::shouldReceive('info');
+
+        $releasedDuringConfirmation = false;
+        $walletService = Mockery::mock(WalletService::class);
+        $walletService->shouldReceive('getMasterWallet')->andReturn([
+            'address' => $this->chain->master_wallet_address,
+            'privateKey' => '0x' . str_repeat('11', 32),
+        ]);
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $signer->shouldReceive('signTransaction')->andReturn('0xsigned');
+
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('getBalance')->andReturn('0x0');
+        $web3Mock->shouldReceive('getTransactionCount')->andReturn('0x1');
+        $web3Mock->shouldReceive('gasPrice')->andReturn('0x4a817c800');
+        $web3Mock->shouldReceive('sendRawTransaction')->andReturn('0x' . str_repeat('ab', 32));
+        $web3Mock->shouldReceive('waitForConfirmation')->once()->andReturnUsing(function () use (&$releasedDuringConfirmation) {
+            $lock = Cache::lock('sweeper-master-nonce-' . $this->chain->chain_id, 30);
+            $releasedDuringConfirmation = $lock->get();
+            if ($releasedDuringConfirmation) {
+                $lock->release();
+            }
+
+            return true;
+        });
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        (new FundDepositAddress($this->sweep))->handle($walletService, $signer);
+
+        $this->assertTrue($releasedDuringConfirmation);
+        Queue::assertPushed(SweepTokens::class);
     }
 }

@@ -48,7 +48,7 @@ class Quantity
 
         $decimal = '0';
         foreach (str_split($hex) as $digit) {
-            $decimal = bcadd(bcmul($decimal, '16'), (string) hexdec($digit));
+            $decimal = bcadd(bcmul($decimal, '16', 0), (string) hexdec($digit), 0);
         }
 
         return $decimal;
@@ -58,7 +58,7 @@ class Quantity
     {
         $decimal = self::toDecimal($decimal);
 
-        if (bccomp($decimal, '0') === 0) {
+        if (bccomp($decimal, '0', 0) === 0) {
             if ($padBytes === null) {
                 return $withPrefix ? '0x0' : '0';
             }
@@ -70,8 +70,8 @@ class Quantity
 
         $hex = '';
         $value = $decimal;
-        while (bccomp($value, '0') === 1) {
-            $hex = dechex((int) bcmod($value, '16')) . $hex;
+        while (bccomp($value, '0', 0) === 1) {
+            $hex = dechex((int) bcmod($value, '16', 0)) . $hex;
             $value = bcdiv($value, '16', 0);
         }
 
@@ -90,28 +90,28 @@ class Quantity
 
     public static function compare(string|int $left, string|int $right): int
     {
-        return bccomp(self::toDecimal($left), self::toDecimal($right));
+        return bccomp(self::toDecimal($left), self::toDecimal($right), 0);
     }
 
     public static function add(string|int $left, string|int $right): string
     {
-        return bcadd(self::toDecimal($left), self::toDecimal($right));
+        return bcadd(self::toDecimal($left), self::toDecimal($right), 0);
     }
 
     public static function sub(string|int $left, string|int $right): string
     {
-        return bcsub(self::toDecimal($left), self::toDecimal($right));
+        return bcsub(self::toDecimal($left), self::toDecimal($right), 0);
     }
 
     public static function mul(string|int $left, string|int $right): string
     {
-        return bcmul(self::toDecimal($left), self::toDecimal($right));
+        return bcmul(self::toDecimal($left), self::toDecimal($right), 0);
     }
 
     public static function toInt(string|int $value): int
     {
         $decimal = self::toDecimal($value);
-        if (bccomp($decimal, (string) PHP_INT_MAX) === 1) {
+        if (bccomp($decimal, (string) PHP_INT_MAX, 0) === 1) {
             throw new \InvalidArgumentException('Quantity does not fit in a PHP integer');
         }
 

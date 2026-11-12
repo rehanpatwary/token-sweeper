@@ -7,7 +7,7 @@ class Rlp
     public static function encodeInteger(string|int $value): string
     {
         $decimal = Quantity::toDecimal($value);
-        if (bccomp($decimal, '0') === 0) {
+        if (bccomp($decimal, '0', 0) === 0) {
             return self::encodeBytes('');
         }
 

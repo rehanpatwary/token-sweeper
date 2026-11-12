@@ -199,14 +199,14 @@ class SweeperService
             $balance = Quantity::toDecimal($web3->getBalance($depositAddress));
             $gasPrice = Quantity::toDecimal($web3->gasPrice());
             $gasCost = Quantity::mul('21000', $gasPrice);
-            $threshold = bcdiv(bcmul($gasCost, '11'), '10', 0);
+            $threshold = bcdiv(bcmul($gasCost, '11', 0), '10', 0);
 
-            if (bccomp($balance, $threshold) !== 1) {
+            if (bccomp($balance, $threshold, 0) !== 1) {
                 return;
             }
 
             $amountToSend = Quantity::sub($balance, $gasCost);
-            if (bccomp($amountToSend, '0') !== 1) {
+            if (bccomp($amountToSend, '0', 0) !== 1) {
                 return;
             }
 

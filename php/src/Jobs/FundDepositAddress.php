@@ -43,7 +43,7 @@ class FundDepositAddress implements ShouldQueue
             }
 
             $lock = Cache::lock('sweeper-master-nonce-' . $chain->chain_id, 30);
-            $lock->block(15, function () use ($chain, $web3, $walletService, $signer) {
+            $txHash = $lock->block(15, function () use ($chain, $web3, $walletService, $signer) {
                 $masterWallet = $walletService->getMasterWallet($chain->chain_id);
                 $transaction = [
                     'nonce' => Quantity::toInt($web3->getTransactionCount($masterWallet['address'])),
@@ -55,19 +55,21 @@ class FundDepositAddress implements ShouldQueue
                 ];
 
                 $signedTx = $signer->signTransaction($transaction, $masterWallet['privateKey'], $chain->chain_id);
-                $txHash = $web3->sendRawTransaction($signedTx);
+                $hash = $web3->sendRawTransaction($signedTx);
 
-                Log::info("Funded address with gas", ['tx_hash' => $txHash]);
+                Log::info("Funded address with gas", ['tx_hash' => $hash]);
 
                 $this->sweep->update([
                     'status' => 'funding',
-                    'funding_tx_hash' => $txHash,
+                    'funding_tx_hash' => $hash,
                 ]);
 
-                if ($web3->waitForConfirmation($txHash) !== true) {
-                    throw new \RuntimeException("Funding transaction reverted: {$txHash}");
-                }
+                return $hash;
             });
+
+            if ($web3->waitForConfirmation($txHash) !== true) {
+                throw new \RuntimeException("Funding transaction reverted: {$txHash}");
+            }
 
             SweepTokens::dispatch($this->sweep);
 
