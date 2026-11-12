@@ -67,7 +67,7 @@ class QuantityTest extends TestCase
     /** @test */
     public function it_holds_the_master_nonce_lock_longer_than_the_rpc_calls_inside_it(): void
     {
-        $this->assertGreaterThan(30 * 3, MasterNonceLock::HOLD_SECONDS);
+        $this->assertGreaterThan(30 * 4, MasterNonceLock::HOLD_SECONDS);
     }
 
     /** @test */

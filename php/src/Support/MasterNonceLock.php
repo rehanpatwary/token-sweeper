@@ -8,10 +8,10 @@ use Illuminate\Support\Facades\Cache;
 class MasterNonceLock
 {
     /**
-     * Longer than three RPC calls at the 30 second HTTP timeout, so the lock
-     * cannot expire while the nonce is being read and the transaction broadcast.
+     * Longer than the four RPC calls inside the lock, each with a 30 second
+     * HTTP timeout, so the lock cannot expire before the transaction is broadcast.
      */
-    public const HOLD_SECONDS = 120;
+    public const HOLD_SECONDS = 180;
 
     public static function acquire(int $chainId): Lock
     {

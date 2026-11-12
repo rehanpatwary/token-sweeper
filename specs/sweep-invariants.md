@@ -13,7 +13,7 @@ These rules apply to `SweeperService::processSweep` and to the `FundDepositAddre
 
 - The deposit address is funded only when its native balance is strictly below `chains.gas_amount_wei`.
 - The value field of that transaction is exactly `gas_amount_wei`, interpreted as a decimal integer when it has no `0x` prefix.
-- Funding uses the master wallet. The nonce is `eth_getTransactionCount(address, "pending")`, taken inside a per-chain cache lock. The lock is held for 120 seconds, which covers the RPC calls inside it, and it is released before waiting for the receipt. The native balance is read again inside the lock so a second funder does not send gas that the first funder already sent.
+- Funding uses the master wallet. The nonce is `eth_getTransactionCount(address, "pending")`, taken inside a per-chain cache lock. The lock is held for 180 seconds, which covers the RPC calls inside it, and it is released before waiting for the receipt. The native balance is read again inside the lock so a second funder does not send gas that the first funder already sent.
 - A funding receipt of `0x0` fails the sweep. The token transfer is not sent.
 
 ## Signing
