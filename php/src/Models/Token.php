@@ -5,6 +5,15 @@ namespace Multicoin\TokenSweeper\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int $chain_id
+ * @property string $symbol
+ * @property string $name
+ * @property string $contract_address
+ * @property int $decimals
+ * @property bool $is_active
+ */
 class Token extends Model
 {
     protected $table = 'sweeper_tokens';

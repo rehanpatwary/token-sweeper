@@ -20,6 +20,8 @@ class CheckPendingSweepsTest extends TestCase
     {
         parent::setUp();
 
+        PendingSweep::unguard();
+
         // Create test chain
         $this->chain = Chain::create([
             'chain_id' => 1,
@@ -37,6 +39,7 @@ class CheckPendingSweepsTest extends TestCase
 
     protected function tearDown(): void
     {
+        PendingSweep::reguard();
         Mockery::close();
         parent::tearDown();
     }

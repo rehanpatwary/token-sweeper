@@ -4,9 +4,9 @@ namespace Multicoin\TokenSweeper\Tests\Unit\Models;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Multicoin\TokenSweeper\Models\Chain;
-use Multicoin\TokenSweeper\Models\Token;
 use Multicoin\TokenSweeper\Models\DepositAddress;
 use Multicoin\TokenSweeper\Models\PendingSweep;
+use Multicoin\TokenSweeper\Models\Token;
 use Multicoin\TokenSweeper\Tests\TestCase;
 
 class ChainTest extends TestCase

@@ -4,7 +4,6 @@ namespace Multicoin\TokenSweeper\Commands;
 
 use Illuminate\Console\Command;
 use Multicoin\TokenSweeper\Models\{Chain, Token};
-use Illuminate\Support\Facades\Crypt;
 
 class SeedChainsCommand extends Command
 {
@@ -32,7 +31,7 @@ class SeedChainsCommand extends Command
             Token::updateOrCreate(
                 [
                     'chain_id' => $tokenData['chain_id'],
-                    'contract_address' => $tokenData['contract_address']
+                    'contract_address' => $tokenData['contract_address'],
                 ],
                 $tokenData
             );

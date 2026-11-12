@@ -6,6 +6,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $user_id
+ * @property int $chain_id
+ * @property string $address
+ * @property string $private_key_encrypted
+ * @property \Illuminate\Support\Carbon|null $last_sweep_at
+ */
 class DepositAddress extends Model
 {
     protected $table = 'sweeper_deposit_addresses';

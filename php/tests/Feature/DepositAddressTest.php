@@ -3,10 +3,10 @@
 namespace Multicoin\TokenSweeper\Tests\Feature;
 
 use Illuminate\Support\Facades\Crypt;
-use Multicoin\TokenSweeper\Tests\TestCase;
 use Multicoin\TokenSweeper\Models\Chain;
 use Multicoin\TokenSweeper\Models\DepositAddress;
 use Multicoin\TokenSweeper\Services\WalletService;
+use Multicoin\TokenSweeper\Tests\TestCase;
 
 class DepositAddressTest extends TestCase
 {
@@ -255,7 +255,7 @@ class DepositAddressTest extends TestCase
         $addresses = $this->walletService->getUserDepositAddresses($userId);
 
         $this->assertEquals(2, $addresses->count());
-        $this->assertTrue($addresses->every(fn($addr) => $addr->user_id === $userId));
+        $this->assertTrue($addresses->every(fn ($addr) => $addr->user_id === $userId));
     }
 
     /** @test */

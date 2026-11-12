@@ -4,14 +4,16 @@ namespace Multicoin\TokenSweeper;
 
 use Illuminate\Support\ServiceProvider;
 use Multicoin\TokenSweeper\Commands\{
-    GenerateDepositAddressCommand,
-    MonitorDepositsCommand,
-    ProcessSweepCommand,
     CheckBalanceCommand,
     CheckPendingSweepsCommand,
+    GenerateDepositAddressCommand,
     InstallCommand,
+    MonitorDepositsCommand,
+    ProcessSweepCommand,
     SeedChainsCommand
 };
+use Multicoin\TokenSweeper\Services\SweeperService;
+use Multicoin\TokenSweeper\Services\WalletService;
 
 class TokenSweeperServiceProvider extends ServiceProvider
 {
@@ -21,6 +23,13 @@ class TokenSweeperServiceProvider extends ServiceProvider
             __DIR__ . '/config/token-sweeper.php',
             'token-sweeper'
         );
+
+        $this->app->singleton('token-sweeper', function ($app) {
+            return new TokenSweeperManager(
+                $app->make(WalletService::class),
+                $app->make(SweeperService::class),
+            );
+        });
     }
 
     public function boot(): void
@@ -31,7 +40,7 @@ class TokenSweeperServiceProvider extends ServiceProvider
         ], 'token-sweeper-config');
 
         // Load migrations
-        $this->loadMigrationsFrom(__DIR__ . '/database/migrations');
+        $this->loadMigrationsFrom(dirname(__DIR__) . '/database/migrations');
 
         // Load routes
         $this->loadRoutesFrom(__DIR__ . '/routes/api.php');

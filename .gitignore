@@ -125,6 +125,8 @@ $RECYCLE.BIN/
 phpunit.xml.bak
 .phpunit.cache
 .phpunit.cache/
+.php-cs-fixer.cache
+.phpstan.cache
 
 # ==============================================
 # Build & Distribution

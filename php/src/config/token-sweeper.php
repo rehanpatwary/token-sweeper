@@ -11,7 +11,8 @@ return [
         'check_interval' => env('SWEEPER_CHECK_INTERVAL', 5), // seconds
         'block_confirmations' => env('SWEEPER_CONFIRMATIONS', 1),
         'max_retry_attempts' => env('SWEEPER_MAX_RETRIES', 3),
-        'retry_delay' => env('SWEEPER_RETRY_DELAY', 60), // seconds
+        'retry_delay' => env('SWEEPER_RETRY_DELAY', 60), // minutes
+        'post_funding_delay_seconds' => env('SWEEPER_POST_FUNDING_DELAY', 2),
     ],
 
     /*

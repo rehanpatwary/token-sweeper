@@ -2,23 +2,21 @@
 
 namespace Multicoin\TokenSweeper\Tests\Feature;
 
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Crypt;
-use Illuminate\Support\Facades\Cache;
-use Multicoin\TokenSweeper\Tests\TestCase;
+use Illuminate\Support\Facades\Event;
+use Multicoin\TokenSweeper\Events\DepositDetected;
+use Multicoin\TokenSweeper\Events\SweepCompleted;
+use Multicoin\TokenSweeper\Events\SweepStarted;
 use Multicoin\TokenSweeper\Models\Chain;
-use Multicoin\TokenSweeper\Models\Token;
 use Multicoin\TokenSweeper\Models\DepositAddress;
 use Multicoin\TokenSweeper\Models\PendingSweep;
 use Multicoin\TokenSweeper\Models\SweepLog;
-use Multicoin\TokenSweeper\Events\DepositDetected;
-use Multicoin\TokenSweeper\Events\SweepStarted;
-use Multicoin\TokenSweeper\Events\SweepCompleted;
+use Multicoin\TokenSweeper\Models\Token;
 use Multicoin\TokenSweeper\Services\SweeperService;
-use Multicoin\TokenSweeper\Services\MonitorService;
+use Multicoin\TokenSweeper\Services\TransactionSignerService;
 use Multicoin\TokenSweeper\Services\WalletService;
 use Multicoin\TokenSweeper\Services\Web3Service;
-use Multicoin\TokenSweeper\Services\TransactionSignerService;
+use Multicoin\TokenSweeper\Tests\TestCase;
 
 class SweepWorkflowTest extends TestCase
 {

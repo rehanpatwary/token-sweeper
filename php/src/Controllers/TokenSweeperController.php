@@ -4,15 +4,16 @@ namespace Multicoin\TokenSweeper\Controllers;
 
 use Illuminate\Http\{JsonResponse, Request};
 use Illuminate\Routing\Controller;
-use Multicoin\TokenSweeper\Models\{Chain, Token, DepositAddress, PendingSweep, SweepLog};
-use Multicoin\TokenSweeper\Services\{WalletService, SweeperService};
+use Multicoin\TokenSweeper\Models\{Chain, PendingSweep, SweepLog, Token};
+use Multicoin\TokenSweeper\Services\{SweeperService, WalletService};
 
 class TokenSweeperController extends Controller
 {
     public function __construct(
         protected WalletService $walletService,
         protected SweeperService $sweeperService
-    ) {}
+    ) {
+    }
 
     public function health(): JsonResponse
     {

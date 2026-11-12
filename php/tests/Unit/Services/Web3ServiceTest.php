@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Exception\RequestException;
 use GuzzleHttp\Handler\MockHandler;
 use GuzzleHttp\HandlerStack;
+use GuzzleHttp\Middleware;
 use GuzzleHttp\Psr7\Request;
 use GuzzleHttp\Psr7\Response;
 use Illuminate\Support\Facades\Cache;
@@ -662,5 +663,48 @@ class Web3ServiceTest extends TestCase
         $this->assertEquals($gasPrice1, $result1);
         $this->assertEquals($gasPrice2, $result2);
         $this->assertNotEquals($result1, $result2);
+    }
+
+    /** @test */
+    public function it_reads_the_pending_nonce_so_in_flight_transactions_are_counted(): void
+    {
+        $history = [];
+        $mock = new MockHandler([
+            $this->createSuccessResponse('0x3'),
+        ]);
+        $stack = HandlerStack::create($mock);
+        $stack->push(Middleware::history($history));
+
+        $service = new Web3Service($this->testRpcUrl, $this->testChainId);
+        $property = (new \ReflectionClass($service))->getProperty('client');
+        $property->setAccessible(true);
+        $property->setValue($service, new Client(['handler' => $stack]));
+
+        $this->assertSame('0x3', $service->getTransactionCount('0x1111111111111111111111111111111111111111'));
+
+        $body = json_decode((string) $history[0]['request']->getBody(), true);
+        $this->assertSame('eth_getTransactionCount', $body['method']);
+        $this->assertSame(
+            ['0x1111111111111111111111111111111111111111', 'pending'],
+            $body['params']
+        );
+    }
+
+    /** @test */
+    public function it_rejects_a_missing_transaction_hash(): void
+    {
+        $this->expectException(\RuntimeException::class);
+
+        $this->mockHandler->append($this->createSuccessResponse(null));
+        $this->web3Service->sendRawTransaction('0x' . str_repeat('ab', 32));
+    }
+
+    /** @test */
+    public function it_rejects_a_missing_balance(): void
+    {
+        $this->expectException(\RuntimeException::class);
+
+        $this->mockHandler->append($this->createSuccessResponse(null));
+        $this->web3Service->getBalance('0x1111111111111111111111111111111111111111');
     }
 }

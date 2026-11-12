@@ -202,7 +202,7 @@ class FundDepositAddressTest extends TestCase
         $signer = Mockery::mock(TransactionSignerService::class);
         $signer->shouldReceive('signTransaction')
             ->once()
-            ->withArgs(function ($transaction, $privateKey, $chainId) use ($expectedNonce, $expectedGasPrice) {
+            ->withArgs(function ($transaction, $privateKey, $chainId) use ($expectedNonce, $expectedGasPrice, $masterWallet) {
                 return $transaction['nonce'] === $expectedNonce
                     && $transaction['gasPrice'] === $expectedGasPrice
                     && $transaction['gasLimit'] === 21000
@@ -442,5 +442,66 @@ class FundDepositAddressTest extends TestCase
         $job->handle($walletService, $signer);
 
         // Verify waitForConfirmation was called (assertion is in the mock)
+    }
+
+    /** @test */
+    public function it_treats_decimal_wei_config_as_decimal_when_deciding_the_address_is_funded(): void
+    {
+        Queue::fake();
+        Log::shouldReceive('info');
+
+        $this->chain->update(['gas_amount_wei' => '2000000000000000']);
+
+        $walletService = Mockery::mock(WalletService::class);
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $signer->shouldNotReceive('signTransaction');
+
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('getBalance')
+            ->once()
+            ->andReturn('0x71afd498d0000');
+        $web3Mock->shouldNotReceive('sendRawTransaction');
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        $job = new FundDepositAddress($this->sweep);
+        $job->handle($walletService, $signer);
+
+        Queue::assertPushed(SweepTokens::class);
+    }
+
+    /** @test */
+    public function it_does_not_dispatch_a_sweep_when_the_funding_transaction_reverts(): void
+    {
+        Queue::fake();
+        Log::shouldReceive('info');
+        Log::shouldReceive('error');
+
+        $txHash = '0x' . str_repeat('ab', 32);
+        $walletService = Mockery::mock(WalletService::class);
+        $walletService->shouldReceive('getMasterWallet')->andReturn([
+            'address' => $this->chain->master_wallet_address,
+            'privateKey' => '0x' . str_repeat('11', 32),
+        ]);
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $signer->shouldReceive('signTransaction')->andReturn('0xsigned');
+
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('getBalance')->andReturn('0x0');
+        $web3Mock->shouldReceive('getTransactionCount')->andReturn('0x1');
+        $web3Mock->shouldReceive('gasPrice')->andReturn('0x4a817c800');
+        $web3Mock->shouldReceive('sendRawTransaction')->andReturn($txHash);
+        $web3Mock->shouldReceive('waitForConfirmation')->once()->with($txHash)->andReturn(false);
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        try {
+            (new FundDepositAddress($this->sweep))->handle($walletService, $signer);
+            $this->fail('A reverted funding transaction must fail the job');
+        } catch (\RuntimeException $e) {
+            $this->assertStringContainsString('reverted', strtolower($e->getMessage()));
+        }
+
+        $this->sweep->refresh();
+        $this->assertSame('failed', $this->sweep->status);
+        Queue::assertNotPushed(SweepTokens::class);
     }
 }

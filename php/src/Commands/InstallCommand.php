@@ -3,7 +3,6 @@
 namespace Multicoin\TokenSweeper\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 
 class InstallCommand extends Command
 {
@@ -17,7 +16,7 @@ class InstallCommand extends Command
         // Publish config
         $this->call('vendor:publish', [
             '--tag' => 'token-sweeper-config',
-            '--force' => true
+            '--force' => true,
         ]);
 
         // Run migrations
@@ -26,7 +25,7 @@ class InstallCommand extends Command
         // Publish seeders (optional)
         $this->call('vendor:publish', [
             '--tag' => 'token-sweeper-seeders',
-            '--force' => true
+            '--force' => true,
         ]);
 
         $this->info('✅ Token Sweeper installed successfully!');
