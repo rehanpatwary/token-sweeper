@@ -23,14 +23,16 @@ class CheckPendingSweepsCommand extends Command
         $this->info("Pending Sweeps (Status: {$status}):");
         $this->table(
             ['ID', 'Chain', 'Address', 'Token', 'Status', 'Created'],
-            $sweeps->map(fn($s) => [
-                $s->id,
-                $s->chain->name,
-                substr($s->deposit_address, 0, 10) . '...',
-                $s->token_symbol,
-                $s->status,
-                $s->created_at->diffForHumans(),
-            ])
+            $sweeps->map(function (PendingSweep $sweep): array {
+                return [
+                    $sweep->id,
+                    $sweep->chain->name,
+                    substr($sweep->deposit_address, 0, 10) . '...',
+                    $sweep->token_symbol,
+                    $sweep->status,
+                    $sweep->created_at->diffForHumans(),
+                ];
+            })
         );
 
         return self::SUCCESS;

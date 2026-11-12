@@ -26,6 +26,8 @@
     ],
     "require": {
         "php": "^8.2",
+        "ext-bcmath": "*",
+        "ext-gmp": "*",
         "illuminate/support": "^10.0|^11.0",
         "illuminate/database": "^10.0|^11.0",
         "illuminate/console": "^10.0|^11.0",
@@ -36,7 +38,10 @@
     "require-dev": {
         "phpunit/phpunit": "^11.0",
         "orchestra/testbench": "^8.0|^9.0",
-        "mockery/mockery": "^1.6"
+        "mockery/mockery": "^1.6",
+        "phpstan/phpstan": "^2.0",
+        "friendsofphp/php-cs-fixer": "^3.64",
+        "larastan/larastan": "^3.0"
     },
     "autoload": {
         "psr-4": {
@@ -63,7 +68,9 @@
         "test:unit": "phpunit --testsuite=Unit",
         "test:feature": "phpunit --testsuite=Feature",
         "test:php": "phpunit",
-        "format": "php-cs-fixer fix"
+        "analyse": "phpstan analyse --memory-limit=1G",
+        "format": "php-cs-fixer fix",
+        "format:check": "php-cs-fixer fix --dry-run --diff"
     },
     "minimum-stability": "dev",
     "prefer-stable": true

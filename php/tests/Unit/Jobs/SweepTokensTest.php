@@ -296,6 +296,9 @@ class SweepTokensTest extends TestCase
         $this->sweep->refresh();
         $this->assertEquals('failed', $this->sweep->status);
         $this->assertEquals('Private key not found', $this->sweep->error_message);
+        $this->assertEquals(0, $this->sweep->retry_count);
+        $job->failed(new \RuntimeException('Private key not found'));
+        $this->sweep->refresh();
         $this->assertEquals(1, $this->sweep->retry_count);
     }
 
@@ -320,7 +323,7 @@ class SweepTokensTest extends TestCase
         try {
             $job->handle($walletService, $signer);
         } catch (\Exception $e) {
-            // Expected
+            $job->failed($e);
         }
 
         $this->sweep->refresh();
@@ -488,6 +491,7 @@ class SweepTokensTest extends TestCase
         Log::shouldReceive('error');
 
         $walletService = Mockery::mock(WalletService::class);
+        $walletService->shouldReceive('getPrivateKey')->andReturn('0x' . str_repeat('22', 32));
         $signer = Mockery::mock(TransactionSignerService::class);
 
         $web3Mock = Mockery::mock(Web3Service::class);
@@ -568,5 +572,68 @@ class SweepTokensTest extends TestCase
 
         $job = new SweepTokens($this->sweep);
         $job->handle($walletService, $signer);
+    }
+
+    /** @test */
+    public function it_encodes_token_amounts_above_php_int_max_without_float_truncation(): void
+    {
+        Event::fake();
+        Log::shouldReceive('info');
+
+        $walletService = Mockery::mock(WalletService::class);
+        $walletService->shouldReceive('getPrivateKey')->andReturn('0x' . str_repeat('22', 32));
+
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $signer->shouldReceive('signTransaction')
+            ->once()
+            ->withArgs(function (array $transaction) {
+                return str_ends_with(
+                    strtolower($transaction['data']),
+                    '0000000000000000000000000000000000000000000000056bc75e2d63100000'
+                );
+            })
+            ->andReturn('0xsigned');
+
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('callContract')->andReturn('0x56bc75e2d63100000');
+        $web3Mock->shouldReceive('getTransactionCount')->andReturn('0x0');
+        $web3Mock->shouldReceive('gasPrice')->andReturn('0x4a817c800');
+        $web3Mock->shouldReceive('sendRawTransaction')->andReturn('0x' . str_repeat('cd', 32));
+        $web3Mock->shouldReceive('waitForConfirmation')->andReturn(true);
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        (new SweepTokens($this->sweep))->handle($walletService, $signer);
+
+        $this->assertSame('100000000000000000000', SweepLog::where('sweep_id', $this->sweep->id)->first()->amount);
+    }
+
+    /** @test */
+    public function it_marks_the_sweep_failed_when_the_token_transfer_reverts(): void
+    {
+        Event::fake();
+        Log::shouldReceive('info');
+        Log::shouldReceive('error');
+
+        $txHash = '0x' . str_repeat('ef', 32);
+        $walletService = Mockery::mock(WalletService::class);
+        $walletService->shouldReceive('getPrivateKey')->andReturn('0x' . str_repeat('22', 32));
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $signer->shouldReceive('signTransaction')->andReturn('0xsigned');
+
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('callContract')->andReturn('0x' . dechex(1000000));
+        $web3Mock->shouldReceive('getTransactionCount')->andReturn('0x0');
+        $web3Mock->shouldReceive('gasPrice')->andReturn('0x4a817c800');
+        $web3Mock->shouldReceive('sendRawTransaction')->andReturn($txHash);
+        $web3Mock->shouldReceive('waitForConfirmation')->once()->with($txHash)->andReturn(false);
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        (new SweepTokens($this->sweep))->handle($walletService, $signer);
+
+        $this->sweep->refresh();
+        $this->assertSame('failed', $this->sweep->status);
+        $this->assertSame(1, $this->sweep->retry_count);
+        $this->assertSame(0, SweepLog::where('sweep_id', $this->sweep->id)->count());
+        Event::assertNotDispatched(SweepCompleted::class);
     }
 }

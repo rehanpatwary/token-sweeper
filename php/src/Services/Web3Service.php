@@ -40,17 +40,32 @@ class Web3Service
 
     public function getBalance(string $address): string
     {
-        return $this->call('eth_getBalance', [$address, 'latest']);
+        $balance = $this->call('eth_getBalance', [$address, 'latest']);
+        if (!is_string($balance) || !preg_match('/^0x[0-9a-fA-F]*$/', $balance)) {
+            throw new \RuntimeException('RPC returned an invalid balance');
+        }
+
+        return $balance;
     }
 
-    public function getTransactionCount(string $address): string
+    public function getTransactionCount(string $address, string $block = 'pending'): string
     {
-        return $this->call('eth_getTransactionCount', [$address, 'latest']);
+        $count = $this->call('eth_getTransactionCount', [$address, $block]);
+        if (!is_string($count) || !preg_match('/^0x[0-9a-fA-F]*$/', $count)) {
+            throw new \RuntimeException('RPC returned an invalid transaction count');
+        }
+
+        return $count;
     }
 
     public function sendRawTransaction(string $signedTx): string
     {
-        return $this->call('eth_sendRawTransaction', [$signedTx]);
+        $hash = $this->call('eth_sendRawTransaction', [$signedTx]);
+        if (!is_string($hash) || !preg_match('/^0x[0-9a-fA-F]{64}$/', $hash)) {
+            throw new \RuntimeException('RPC returned an invalid transaction hash');
+        }
+
+        return $hash;
     }
 
     public function getTransactionReceipt(string $txHash): ?array
@@ -63,7 +78,12 @@ class Web3Service
         $cacheKey = "gas_price_{$this->chainId}";
 
         return Cache::remember($cacheKey, 10, function () {
-            return $this->call('eth_gasPrice', []);
+            $price = $this->call('eth_gasPrice', []);
+            if (!is_string($price) || !preg_match('/^0x[0-9a-fA-F]+$/', $price)) {
+                throw new \RuntimeException('RPC returned an invalid gas price');
+            }
+
+            return $price;
         });
     }
 
@@ -74,10 +94,16 @@ class Web3Service
 
     public function callContract(string $to, string $data): string
     {
-        return $this->call('eth_call', [
+        $result = $this->call('eth_call', [
             ['to' => $to, 'data' => $data],
-            'latest'
+            'latest',
         ]);
+
+        if (!is_string($result)) {
+            throw new \RuntimeException('RPC returned an invalid call result');
+        }
+
+        return $result;
     }
 
     public function getBlockNumber(): string

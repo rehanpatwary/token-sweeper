@@ -2,6 +2,7 @@
 
 namespace Multicoin\TokenSweeper\Tests\Unit\Jobs;
 
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Queue;
@@ -141,9 +142,9 @@ class FundDepositAddressTest extends TestCase
         // Mock Web3Service
         $web3Mock = Mockery::mock(Web3Service::class);
         $web3Mock->shouldReceive('getBalance')
-            ->once()
+            ->twice()
             ->with($this->sweep->deposit_address)
-            ->andReturn('0x0'); // No balance initially
+            ->andReturn('0x0'); // No balance initially, and still none inside the nonce lock
 
         $web3Mock->shouldReceive('getTransactionCount')
             ->once()
@@ -202,7 +203,7 @@ class FundDepositAddressTest extends TestCase
         $signer = Mockery::mock(TransactionSignerService::class);
         $signer->shouldReceive('signTransaction')
             ->once()
-            ->withArgs(function ($transaction, $privateKey, $chainId) use ($expectedNonce, $expectedGasPrice) {
+            ->withArgs(function ($transaction, $privateKey, $chainId) use ($expectedNonce, $expectedGasPrice, $masterWallet) {
                 return $transaction['nonce'] === $expectedNonce
                     && $transaction['gasPrice'] === $expectedGasPrice
                     && $transaction['gasLimit'] === 21000
@@ -258,6 +259,9 @@ class FundDepositAddressTest extends TestCase
         $this->sweep->refresh();
         $this->assertEquals('failed', $this->sweep->status);
         $this->assertEquals('Wallet not found', $this->sweep->error_message);
+        $this->assertEquals(0, $this->sweep->retry_count);
+        $job->failed(new \RuntimeException('Wallet not found'));
+        $this->sweep->refresh();
         $this->assertEquals(1, $this->sweep->retry_count);
     }
 
@@ -282,7 +286,7 @@ class FundDepositAddressTest extends TestCase
         try {
             $job->handle($walletService, $signer);
         } catch (\Exception $e) {
-            // Expected
+            $job->failed($e);
         }
 
         $this->sweep->refresh();
@@ -442,5 +446,151 @@ class FundDepositAddressTest extends TestCase
         $job->handle($walletService, $signer);
 
         // Verify waitForConfirmation was called (assertion is in the mock)
+    }
+
+    /** @test */
+    public function it_treats_decimal_wei_config_as_decimal_when_deciding_the_address_is_funded(): void
+    {
+        Queue::fake();
+        Log::shouldReceive('info');
+
+        $this->chain->update(['gas_amount_wei' => '2000000000000000']);
+
+        $walletService = Mockery::mock(WalletService::class);
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $signer->shouldNotReceive('signTransaction');
+
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('getBalance')
+            ->once()
+            ->andReturn('0x71afd498d0000');
+        $web3Mock->shouldNotReceive('sendRawTransaction');
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        $job = new FundDepositAddress($this->sweep);
+        $job->handle($walletService, $signer);
+
+        Queue::assertPushed(SweepTokens::class);
+    }
+
+    /** @test */
+    public function it_does_not_dispatch_a_sweep_when_the_funding_transaction_reverts(): void
+    {
+        Queue::fake();
+        Log::shouldReceive('info');
+        Log::shouldReceive('error');
+
+        $txHash = '0x' . str_repeat('ab', 32);
+        $walletService = Mockery::mock(WalletService::class);
+        $walletService->shouldReceive('getMasterWallet')->andReturn([
+            'address' => $this->chain->master_wallet_address,
+            'privateKey' => '0x' . str_repeat('11', 32),
+        ]);
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $signer->shouldReceive('signTransaction')->andReturn('0xsigned');
+
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('getBalance')->andReturn('0x0');
+        $web3Mock->shouldReceive('getTransactionCount')->andReturn('0x1');
+        $web3Mock->shouldReceive('gasPrice')->andReturn('0x4a817c800');
+        $web3Mock->shouldReceive('sendRawTransaction')->andReturn($txHash);
+        $web3Mock->shouldReceive('waitForConfirmation')->once()->with($txHash)->andReturn(false);
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        (new FundDepositAddress($this->sweep))->handle($walletService, $signer);
+
+        $this->sweep->refresh();
+        $this->assertSame('failed', $this->sweep->status);
+        $this->assertSame(1, $this->sweep->retry_count);
+        Queue::assertNotPushed(SweepTokens::class);
+    }
+
+    /** @test */
+    public function it_releases_the_master_nonce_lock_before_waiting_for_confirmation(): void
+    {
+        Queue::fake();
+        Log::shouldReceive('info');
+
+        $releasedDuringConfirmation = false;
+        $walletService = Mockery::mock(WalletService::class);
+        $walletService->shouldReceive('getMasterWallet')->andReturn([
+            'address' => $this->chain->master_wallet_address,
+            'privateKey' => '0x' . str_repeat('11', 32),
+        ]);
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $signer->shouldReceive('signTransaction')->andReturn('0xsigned');
+
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('getBalance')->andReturn('0x0');
+        $web3Mock->shouldReceive('getTransactionCount')->andReturn('0x1');
+        $web3Mock->shouldReceive('gasPrice')->andReturn('0x4a817c800');
+        $web3Mock->shouldReceive('sendRawTransaction')->andReturn('0x' . str_repeat('ab', 32));
+        $web3Mock->shouldReceive('waitForConfirmation')->once()->andReturnUsing(function () use (&$releasedDuringConfirmation) {
+            $lock = Cache::lock('sweeper-master-nonce-' . $this->chain->chain_id, 30);
+            $releasedDuringConfirmation = $lock->get();
+            if ($releasedDuringConfirmation) {
+                $lock->release();
+            }
+
+            return true;
+        });
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        (new FundDepositAddress($this->sweep))->handle($walletService, $signer);
+
+        $this->assertTrue($releasedDuringConfirmation);
+        Queue::assertPushed(SweepTokens::class);
+    }
+
+    /** @test */
+    public function it_rechecks_the_balance_inside_the_nonce_lock_before_sending_gas(): void
+    {
+        Queue::fake();
+        Log::shouldReceive('info');
+
+        $this->chain->update(['gas_amount_wei' => '2000000000000000']);
+
+        $walletService = Mockery::mock(WalletService::class);
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $signer->shouldNotReceive('signTransaction');
+
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('getBalance')->andReturn('0x0', '0x71afd498d0000');
+        $web3Mock->shouldNotReceive('sendRawTransaction');
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        (new FundDepositAddress($this->sweep))->handle($walletService, $signer);
+
+        Queue::assertPushed(SweepTokens::class);
+    }
+
+    /** @test */
+    public function it_records_one_retry_when_the_queue_gives_up_after_a_transient_failure(): void
+    {
+        Log::shouldReceive('error');
+
+        $walletService = Mockery::mock(WalletService::class);
+        $signer = Mockery::mock(TransactionSignerService::class);
+        $web3Mock = Mockery::mock(Web3Service::class);
+        $web3Mock->shouldReceive('getBalance')->andThrow(new \RuntimeException('RPC timeout'));
+        $this->app->instance(Web3Service::class, $web3Mock);
+
+        $job = new FundDepositAddress($this->sweep);
+        $caught = null;
+
+        try {
+            $job->handle($walletService, $signer);
+            $this->fail('A transient RPC failure must be rethrown for the queue');
+        } catch (\RuntimeException $e) {
+            $caught = $e;
+            $this->assertSame('RPC timeout', $e->getMessage());
+        }
+
+        $this->sweep->refresh();
+        $this->assertSame(0, $this->sweep->retry_count);
+
+        $job->failed($caught);
+        $this->sweep->refresh();
+        $this->assertSame(1, $this->sweep->retry_count);
     }
 }

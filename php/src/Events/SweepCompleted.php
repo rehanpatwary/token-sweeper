@@ -8,7 +8,10 @@ use Multicoin\TokenSweeper\Models\PendingSweep;
 
 class SweepCompleted
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
-    public function __construct(public PendingSweep $sweep) {}
+    public function __construct(public PendingSweep $sweep)
+    {
+    }
 }

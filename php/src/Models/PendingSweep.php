@@ -6,6 +6,21 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property int $id
+ * @property string $deposit_address
+ * @property int $chain_id
+ * @property string $token_address
+ * @property string|null $token_symbol
+ * @property string $amount
+ * @property string $status
+ * @property string|null $funding_tx_hash
+ * @property string|null $sweep_tx_hash
+ * @property string|null $error_message
+ * @property int $retry_count
+ * @property \Illuminate\Support\Carbon $created_at
+ * @property \Illuminate\Support\Carbon $updated_at
+ */
 class PendingSweep extends Model
 {
     protected $table = 'sweeper_pending_sweeps';
@@ -28,6 +43,9 @@ class PendingSweep extends Model
         'retry_count' => 'integer',
     ];
 
+    /**
+     * @return BelongsTo<Chain, $this>
+     */
     public function chain(): BelongsTo
     {
         return $this->belongsTo(Chain::class, 'chain_id', 'chain_id');

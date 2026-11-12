@@ -5,6 +5,19 @@ namespace Multicoin\TokenSweeper\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property int $id
+ * @property int $chain_id
+ * @property string $name
+ * @property string $rpc_url
+ * @property string $master_wallet_address
+ * @property string $master_private_key_encrypted
+ * @property string $hot_wallet_address
+ * @property string $native_symbol
+ * @property string $gas_amount_wei
+ * @property int $gas_limit_token_transfer
+ * @property bool $is_active
+ */
 class Chain extends Model
 {
     protected $table = 'sweeper_chains';

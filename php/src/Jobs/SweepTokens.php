@@ -6,21 +6,29 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\{InteractsWithQueue, SerializesModels};
-use Multicoin\TokenSweeper\Models\{Chain, PendingSweep, SweepLog};
-use Multicoin\TokenSweeper\Services\{Web3Service, WalletService, TransactionSignerService};
-use Multicoin\TokenSweeper\Events\SweepCompleted;
 use Illuminate\Support\Facades\Log;
+use Multicoin\TokenSweeper\Events\SweepCompleted;
+use Multicoin\TokenSweeper\Exceptions\SweepRevertedException;
+use Multicoin\TokenSweeper\Models\{Chain, PendingSweep, SweepLog};
+use Multicoin\TokenSweeper\Services\{TransactionSignerService, WalletService};
+use Multicoin\TokenSweeper\Support\ChainRpc;
+use Multicoin\TokenSweeper\Support\Erc20;
+use Multicoin\TokenSweeper\Support\Quantity;
 
 class SweepTokens implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     public $tries = 3;
     public $timeout = 300;
 
     public function __construct(
         public PendingSweep $sweep
-    ) {}
+    ) {
+    }
 
     public function handle(
         WalletService $walletService,
@@ -28,40 +36,28 @@ class SweepTokens implements ShouldQueue
     ): void {
         try {
             $chain = Chain::where('chain_id', $this->sweep->chain_id)->firstOrFail();
-            $web3 = new Web3Service($chain->rpc_url, $chain->chain_id);
+            $web3 = ChainRpc::connect($chain);
 
             $this->sweep->update(['status' => 'sweeping']);
 
-            // Get private key
             $privateKey = $walletService->getPrivateKey($this->sweep->deposit_address, $chain->chain_id);
 
-            // Get token balance
-            $balanceHex = $web3->callContract(
+            $balance = Quantity::hexToDecimal($web3->callContract(
                 $this->sweep->token_address,
-                '0x70a08231' . str_pad(str_replace('0x', '', $this->sweep->deposit_address), 64, '0', STR_PAD_LEFT)
-            );
+                Erc20::balanceOfData($this->sweep->deposit_address)
+            ));
 
-            $balance = hexdec($balanceHex);
-
-            if ($balance === 0) {
-                throw new \Exception('No tokens to sweep');
+            if (Quantity::compare($balance, '0') === 0) {
+                throw new \RuntimeException('No tokens to sweep');
             }
 
-            // Build transfer data
-            $transferData = '0xa9059cbb' .
-                str_pad(str_replace('0x', '', $chain->hot_wallet_address), 64, '0', STR_PAD_LEFT) .
-                str_pad(dechex($balance), 64, '0', STR_PAD_LEFT);
-
-            $nonce = hexdec($web3->getTransactionCount($this->sweep->deposit_address));
-            $gasPrice = hexdec($web3->gasPrice());
-
             $transaction = [
-                'nonce' => $nonce,
-                'gasPrice' => $gasPrice,
+                'nonce' => Quantity::toInt($web3->getTransactionCount($this->sweep->deposit_address)),
+                'gasPrice' => Quantity::toInt($web3->gasPrice()),
                 'gasLimit' => $chain->gas_limit_token_transfer,
                 'to' => $this->sweep->token_address,
                 'value' => '0x0',
-                'data' => $transferData
+                'data' => Erc20::transferData($chain->hot_wallet_address, $balance),
             ];
 
             $signedTx = $signer->signTransaction($transaction, $privateKey, $chain->chain_id);
@@ -71,19 +67,18 @@ class SweepTokens implements ShouldQueue
 
             $this->sweep->update(['sweep_tx_hash' => $txHash]);
 
-            // Wait for confirmation
-            $web3->waitForConfirmation($txHash);
+            if ($web3->waitForConfirmation($txHash) !== true) {
+                throw new SweepRevertedException("Sweep transaction reverted: {$txHash}");
+            }
 
-            // Mark as completed
             $this->sweep->markAsCompleted($txHash);
 
-            // Create log
             SweepLog::create([
                 'sweep_id' => $this->sweep->id,
                 'chain_id' => $this->sweep->chain_id,
                 'deposit_address' => $this->sweep->deposit_address,
                 'token_address' => $this->sweep->token_address,
-                'amount' => (string)$balance,
+                'amount' => $balance,
                 'funding_tx_hash' => $this->sweep->funding_tx_hash,
                 'sweep_tx_hash' => $txHash,
                 'status' => 'completed',
@@ -93,16 +88,27 @@ class SweepTokens implements ShouldQueue
 
             Log::info("Sweep completed successfully", ['sweep_id' => $this->sweep->id]);
 
-        } catch (\Exception $e) {
+        } catch (SweepRevertedException $e) {
             Log::error("Sweep failed", [
                 'sweep_id' => $this->sweep->id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+            ]);
+            $this->sweep->markAsFailed($e->getMessage());
+            $this->sweep->incrementRetry();
+        } catch (\Throwable $e) {
+            Log::error("Sweep failed", [
+                'sweep_id' => $this->sweep->id,
+                'error' => $e->getMessage(),
             ]);
 
             $this->sweep->markAsFailed($e->getMessage());
-            $this->sweep->incrementRetry();
 
             throw $e;
         }
+    }
+
+    public function failed(\Throwable $e): void
+    {
+        $this->sweep->incrementRetry();
     }
 }

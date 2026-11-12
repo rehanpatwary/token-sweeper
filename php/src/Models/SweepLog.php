@@ -5,6 +5,18 @@ namespace Multicoin\TokenSweeper\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property int $id
+ * @property int|null $sweep_id
+ * @property int $chain_id
+ * @property string $deposit_address
+ * @property string $token_address
+ * @property string $amount
+ * @property string|null $funding_tx_hash
+ * @property string|null $sweep_tx_hash
+ * @property string|null $gas_used
+ * @property string $status
+ */
 class SweepLog extends Model
 {
     protected $table = 'sweeper_logs';

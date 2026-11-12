@@ -4,6 +4,7 @@ namespace Multicoin\TokenSweeper\Services;
 
 use Elliptic\EC;
 use kornrunner\Keccak;
+use Multicoin\TokenSweeper\Support\Rlp;
 
 class TransactionSignerService
 {
@@ -18,87 +19,66 @@ class TransactionSignerService
     {
         $privateKey = str_replace('0x', '', $privateKey);
 
-        $raw = [
-            $this->encodeNumber($transaction['nonce']),
-            $this->encodeNumber($transaction['gasPrice']),
-            $this->encodeNumber($transaction['gasLimit']),
-            $transaction['to'] ? $this->encodeAddress($transaction['to']) : '',
-            $this->encodeNumber($transaction['value']),
-            $transaction['data'] ?? '',
+        $signingPayload = [
+            Rlp::encodeInteger($transaction['nonce']),
+            Rlp::encodeInteger($transaction['gasPrice']),
+            Rlp::encodeInteger($transaction['gasLimit']),
+            $this->encodeAddress($transaction['to'] ?? ''),
+            Rlp::encodeInteger($transaction['value']),
+            $this->encodeData($transaction['data'] ?? ''),
         ];
 
-        if ($chainId) {
-            $raw[] = $this->encodeNumber($chainId);
-            $raw[] = '';
-            $raw[] = '';
+        if ($chainId > 0) {
+            $signingPayload[] = Rlp::encodeInteger($chainId);
+            $signingPayload[] = Rlp::encodeBytes('');
+            $signingPayload[] = Rlp::encodeBytes('');
         }
 
-        $encoded = $this->rlpEncode($raw);
+        $encoded = Rlp::encodeList($signingPayload);
         $hash = Keccak::hash(hex2bin($encoded), 256);
 
         $key = $this->ec->keyFromPrivate($privateKey, 'hex');
         $signature = $key->sign($hash, ['canonical' => true]);
 
-        $r = str_pad($signature->r->toString(16), 64, '0', STR_PAD_LEFT);
-        $s = str_pad($signature->s->toString(16), 64, '0', STR_PAD_LEFT);
-        $v = dechex($signature->recoveryParam + ($chainId ? $chainId * 2 + 35 : 27));
+        $recovery = (int) $signature->recoveryParam;
+        $v = $chainId > 0 ? $recovery + ($chainId * 2 + 35) : $recovery + 27;
 
-        $signedRaw = [
-            $this->encodeNumber($transaction['nonce']),
-            $this->encodeNumber($transaction['gasPrice']),
-            $this->encodeNumber($transaction['gasLimit']),
-            $transaction['to'] ? $this->encodeAddress($transaction['to']) : '',
-            $this->encodeNumber($transaction['value']),
-            $transaction['data'] ?? '',
-            $v,
-            '0x' . $r,
-            '0x' . $s
+        $signedPayload = [
+            Rlp::encodeInteger($transaction['nonce']),
+            Rlp::encodeInteger($transaction['gasPrice']),
+            Rlp::encodeInteger($transaction['gasLimit']),
+            $this->encodeAddress($transaction['to'] ?? ''),
+            Rlp::encodeInteger($transaction['value']),
+            $this->encodeData($transaction['data'] ?? ''),
+            Rlp::encodeInteger($v),
+            Rlp::encodeInteger('0x' . $signature->r->toString(16)),
+            Rlp::encodeInteger('0x' . $signature->s->toString(16)),
         ];
 
-        return '0x' . $this->rlpEncode($signedRaw);
-    }
-
-    protected function encodeNumber($number): string
-    {
-        if (is_string($number)) {
-            $number = str_replace('0x', '', $number);
-            return '0x' . ltrim($number, '0') ?: '0';
-        }
-        return '0x' . dechex($number);
+        return '0x' . Rlp::encodeList($signedPayload);
     }
 
     protected function encodeAddress(string $address): string
     {
-        return strtolower(str_replace('0x', '', $address));
+        $address = strtolower(str_replace('0x', '', trim($address)));
+        if ($address === '') {
+            return Rlp::encodeBytes('');
+        }
+
+        if (!preg_match('/^[0-9a-f]{40}$/', $address)) {
+            throw new \InvalidArgumentException('Invalid transaction address');
+        }
+
+        return Rlp::encodeBytes($address);
     }
 
-    protected function rlpEncode($input): string
+    protected function encodeData(string $data): string
     {
-        if (is_array($input)) {
-            $output = '';
-            foreach ($input as $item) {
-                $output .= $this->rlpEncode($item);
-            }
-            return $this->encodeLength(strlen($output) / 2, 192) . $output;
-        } else {
-            $input = str_replace('0x', '', $input);
-            if (strlen($input) === 0) {
-                return '80';
-            } elseif (strlen($input) === 2 && hexdec($input) < 128) {
-                return $input;
-            } else {
-                return $this->encodeLength(strlen($input) / 2, 128) . $input;
-            }
+        $data = strtolower(trim($data));
+        if ($data === '0x') {
+            $data = '';
         }
-    }
 
-    protected function encodeLength(int $len, int $offset): string
-    {
-        if ($len < 56) {
-            return dechex($len + $offset);
-        } else {
-            $hexLen = dechex($len);
-            return dechex(strlen($hexLen) / 2 + $offset + 55) . $hexLen;
-        }
+        return Rlp::encodeBytes($data);
     }
 }

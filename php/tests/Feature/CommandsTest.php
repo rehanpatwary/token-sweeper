@@ -2,14 +2,13 @@
 
 namespace Multicoin\TokenSweeper\Tests\Feature;
 
-use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\Artisan;
-use Multicoin\TokenSweeper\Tests\TestCase;
+use Illuminate\Support\Facades\Crypt;
 use Multicoin\TokenSweeper\Models\Chain;
-use Multicoin\TokenSweeper\Models\Token;
 use Multicoin\TokenSweeper\Models\DepositAddress;
 use Multicoin\TokenSweeper\Models\PendingSweep;
-use Multicoin\TokenSweeper\Services\WalletService;
+use Multicoin\TokenSweeper\Models\Token;
+use Multicoin\TokenSweeper\Tests\TestCase;
 
 class CommandsTest extends TestCase
 {
@@ -253,7 +252,7 @@ class CommandsTest extends TestCase
             'chain_id' => $chainId,
         ])
             ->expectsOutput("Processing sweep for {$address}...");
-            // We don't assert exit code because it will fail without mocked Web3
+        // We don't assert exit code because it will fail without mocked Web3
     }
 
     /** @test */
@@ -541,6 +540,9 @@ class CommandsTest extends TestCase
             'private_key_encrypted' => Crypt::encryptString('0x' . str_repeat('2', 64)),
         ]);
 
+        // created_at is not fillable, so unguard for this ordering fixture.
+        PendingSweep::unguard();
+
         // Create sweeps with different timestamps
         $sweep1 = PendingSweep::create([
             'deposit_address' => $depositAddress->address,
@@ -579,5 +581,7 @@ class CommandsTest extends TestCase
         $this->assertEquals($sweep3->id, $sweeps[0]->id);
         $this->assertEquals($sweep2->id, $sweeps[1]->id);
         $this->assertEquals($sweep1->id, $sweeps[2]->id);
+
+        PendingSweep::reguard();
     }
 }

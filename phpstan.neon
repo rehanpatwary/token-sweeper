@@ -1,0 +1,15 @@
+includes:
+    - vendor/larastan/larastan/extension.neon
+
+parameters:
+    level: 5
+    paths:
+        - php/src
+    excludePaths:
+        - php/src/routes
+        - php/src/config
+    treatPhpDocTypesAsCertain: false
+    ignoreErrors:
+        -
+            message: '#While loop condition is always true#'
+            path: php/src/Services/MonitorService.php

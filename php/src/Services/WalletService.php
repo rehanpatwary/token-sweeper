@@ -3,10 +3,10 @@
 namespace Multicoin\TokenSweeper\Services;
 
 use Elliptic\EC;
-use kornrunner\Keccak;
 use Illuminate\Support\Facades\Crypt;
-use Multicoin\TokenSweeper\Models\DepositAddress;
+use kornrunner\Keccak;
 use Multicoin\TokenSweeper\Models\Chain;
+use Multicoin\TokenSweeper\Models\DepositAddress;
 
 class WalletService
 {
@@ -31,7 +31,7 @@ class WalletService
 
         return [
             'address' => $address,
-            'privateKey' => '0x' . $privateKey
+            'privateKey' => '0x' . $privateKey,
         ];
     }
 
@@ -60,8 +60,9 @@ class WalletService
 
     public function getPrivateKey(string $address, int $chainId): string
     {
-        $depositAddress = DepositAddress::where('address', $address)
+        $depositAddress = DepositAddress::query()
             ->where('chain_id', $chainId)
+            ->where('address', strtolower($address))
             ->firstOrFail();
 
         return Crypt::decryptString($depositAddress->private_key_encrypted);

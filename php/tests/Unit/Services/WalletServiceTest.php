@@ -7,11 +7,11 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Crypt;
+use Mockery;
 use Multicoin\TokenSweeper\Models\Chain;
 use Multicoin\TokenSweeper\Models\DepositAddress;
 use Multicoin\TokenSweeper\Services\WalletService;
 use Multicoin\TokenSweeper\Tests\TestCase;
-use Mockery;
 
 class WalletServiceTest extends TestCase
 {

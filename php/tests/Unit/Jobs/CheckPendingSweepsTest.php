@@ -20,6 +20,8 @@ class CheckPendingSweepsTest extends TestCase
     {
         parent::setUp();
 
+        PendingSweep::unguard();
+
         // Create test chain
         $this->chain = Chain::create([
             'chain_id' => 1,
@@ -37,6 +39,7 @@ class CheckPendingSweepsTest extends TestCase
 
     protected function tearDown(): void
     {
+        PendingSweep::reguard();
         Mockery::close();
         parent::tearDown();
     }
@@ -152,7 +155,7 @@ class CheckPendingSweepsTest extends TestCase
             'amount' => '1000000',
             'status' => 'pending',
             'retry_count' => 0,
-            'updated_at' => now()->subMinutes(61),
+            'updated_at' => now(),
         ]);
 
         // Create completed sweep
@@ -172,6 +175,32 @@ class CheckPendingSweepsTest extends TestCase
 
         $job = new CheckPendingSweeps();
         $job->handle($sweeperService);
+    }
+
+    /** @test */
+    public function it_retries_a_funding_sweep_that_has_gone_stale(): void
+    {
+        Config::set('token-sweeper.monitoring.stale_sweep_minutes', 15);
+
+        $sweep = PendingSweep::create([
+            'deposit_address' => '0x' . str_repeat('3', 40),
+            'chain_id' => 1,
+            'token_address' => '0x' . str_repeat('4', 40),
+            'token_symbol' => 'USDT',
+            'amount' => '1000000',
+            'status' => 'funding',
+            'retry_count' => 0,
+            'updated_at' => now()->subMinutes(16),
+        ]);
+
+        Log::shouldReceive('info')->once();
+
+        $sweeperService = Mockery::mock(SweeperService::class);
+        $sweeperService->shouldReceive('processSweep')
+            ->once()
+            ->with($sweep->deposit_address, $sweep->token_address, $sweep->chain_id);
+
+        (new CheckPendingSweeps())->handle($sweeperService);
     }
 
     /** @test */
@@ -531,7 +560,7 @@ class CheckPendingSweepsTest extends TestCase
             'amount' => '1000000',
             'status' => 'pending',
             'retry_count' => 1,
-            'updated_at' => now()->subMinutes(61),
+            'updated_at' => now(),
         ]);
 
         Log::shouldReceive('info')

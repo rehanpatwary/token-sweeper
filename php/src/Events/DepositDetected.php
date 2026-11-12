@@ -7,12 +7,14 @@ use Illuminate\Queue\SerializesModels;
 
 class DepositDetected
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     public function __construct(
         public string $depositAddress,
         public string $tokenAddress,
         public int $chainId,
         public string $amount
-    ) {}
+    ) {
+    }
 }
